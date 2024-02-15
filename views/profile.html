@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Page</title>
+    <%- include('./templates/head.ejs')  %>
+
+    <!-- Load other CSS stylesheets -->
+    <link rel="stylesheet" href="/static/styles/styles.css" />
+
+    <style>
+        .profile-image{
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="flex-container">
+        <!-- Header -->
+        <%- include('./templates/header.ejs')  %>
+
+        <!-- Create a div to hold the map -->
+
+        <div class="expand-container">
+
+            <!-- BIO -->
+            <section class="profile-section main-container">
+                <div class="profile-image">
+                    <img src="https://th.bing.com/th/id/OIP.yhqkR9B2hKbtwwZ8bPNbQQHaHw?rs=1&pid=ImgDetMain" alt="" height="150" width="150">
+                    <br>
+                    <b>Name Of User</b>
+                </div>
+                <div class="profile-inner-section">
+                    <h3>Your Info</h3>
+                    <table>
+                        <tr>
+                            <td>Username:</td>
+                            <td><%= user.username %></td>
+                        </tr>
+                        <tr>
+                            <td>Location:</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>email:</td>
+                            <td><%= user.email %></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="profile-inner-section">
+                    <h3>Settings</h3>
+                    <table>
+                        <tr>
+                            <td><button>Change Password</button></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="profile-inner-section">
+                    <h3>Your Activity</h3>
+                    <h4>Latest Enteties Created/Reviewed</h4>
+                    <h4>Latest Spots Created/Reviewed</h4>
+                    
+                </div>
+
+
+
+
+            </section>
+
+        </div>
+
+        <!-- Footer -->
+        <%- include('./templates/footer.ejs')  %>
+
+    </div>
+</body>
+</html>

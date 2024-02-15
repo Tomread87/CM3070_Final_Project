@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Registration</title>
+    <%- include('./templates/head.ejs')  %>
+
+
+    </style>
+</head>
+
+<body>
+    <div class="flex-container">
+
+        <!-- Header -->
+        <%- include('./templates/header.ejs')  %>
+
+        <div class="form-container expand-container">
+            <form class="login-form" action="/register" method="post">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required autocomplete="name">
+
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required autocomplete="email">
+
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required autocomplete="new-password">
+
+                <label for="repeatPassword">Repeat Password:</label>
+                <input type="password" id="repeatPassword" name="repeatPassword" required autocomplete="new-password">
+
+                <button class="submit-button" type="submit">Register</button>
+                <div id="error-message" style="color: red; text-align: center;"></div>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <%- include('./templates/footer.ejs')  %>
+    </div>
+
+</body>
+<script>
+    document.querySelector('.login-form').addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent the default form submission
+
+        const username = document.getElementById('username').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const repeatPassword = document.getElementById('repeatPassword').value;
+
+        // Create an object to send
+        const data = {
+            username: username,
+            email: email,
+            password: password,
+            repeatPassword: repeatPassword
+        };
+
+        // Use fetch API to send the data to server
+        fetch('/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => {
+                // Parse JSON from the response
+                return response.json().then(data => {
+                    if (response.ok) {
+                        return data; // Return data for successful response
+                    } else {
+                        console.log(data);
+                        if (data.error) throw new Error(data.error); // wrong email or password
+                        else if (data.errors) throw new Error("Please Insert a valid Email and Password"); // Throw an error with the JSON error message
+                        else throw new Error("An Unkown Error Has Occured"); // Throw an error with the JSON error message
+
+                    }
+                });
+            })
+            .then(data => {
+                console.log('Success:', data);
+                // Process the response here
+                alert('Success: ' + data.message)
+                window.location.href = "/"
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+
+                //show error to user
+                document.getElementById("error-message").innerHTML = `<br>${error}`
+            });
+
+    });
+</script>
+
+</html>

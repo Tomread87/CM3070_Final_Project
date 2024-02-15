@@ -1,0 +1,15 @@
+.custom-icon .icon-label {
+    color: #333; 
+    background: rgba(255, 255, 255, 0.85); 
+    padding: 2px 5px; 
+    border-radius: 3px; 
+    font-size: 10px; 
+    text-align: center; 
+    white-space: nowrap; 
+    display: inline-block;
+    z-index: 1;
+}
+
+.icon-label:hover {
+    z-index: 2000;
+}

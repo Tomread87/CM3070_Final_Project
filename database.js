@@ -1,0 +1,242 @@
+const mysql = require('mysql2/promise');
+
+// Create the connection pool. The pool-specific settings are the defaults
+const pool = mysql.createPool({
+    host: 'localhost',
+    user: 'users_connection',
+    database: 'final_project',
+    password: 'password',
+    waitForConnections: true,
+    connectionLimit: 10,
+    maxIdle: 10, // max idle connections, the default value is the same as `connectionLimit`
+    idleTimeout: 60000, // idle connections timeout, in milliseconds, the default value 60000
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
+});
+
+console.log("MySQL database pool connected")
+
+//function to get the user details from db when email or username are specified
+async function getUser(email = null, username = null) {
+    //no try catch so that error is thrown
+    const rows = await pool.execute(
+        'SELECT * FROM users WHERE username = ? OR email = ?',
+        [username, email]
+    );
+    return rows[0][0]
+}
+
+
+//function to register a new user into the database
+async function createUser(username, email, hashed_password) {
+    try {
+        const [result] = await pool.query(
+            'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
+            [username, email, hashed_password]
+        );
+        return result.insertId
+    } catch (error) {
+        console.error('Database error:', error);
+        throw error;
+    }
+
+}
+
+//function to add a new enttity to db
+async function addEntityToDatabase(data) {
+
+    // Get e connection
+    const connection = await pool.getConnection()
+
+    try {
+        // Begin transaction
+        await connection.beginTransaction();
+
+        // Insert into knowledge_entities and get the entity_id
+        const [entityResult] = await connection.query('INSERT INTO knowledge_entities (entity_name, location, submitted_by) VALUES (?, ?, ?)', [data.entityName, data.location, data.userId]);
+        const entityId = entityResult.insertId;
+
+        // Process and insert tags
+        for (const tag of data.entityTag) {
+            let tagId;
+
+            // Check if tag already exists
+            const [existingTag] = await connection.query('SELECT tag_id FROM tags WHERE tag_name = ?', [tag]);
+            if (existingTag.length > 0) {
+                tagId = existingTag[0].tag_id;
+            } else {
+                // Create new tag
+                const [newTagResult] = await connection.query('INSERT INTO tags (tag_name, submitted_by) VALUES (?, ?)', [tag, data.userId]);
+                tagId = newTagResult.insertId;
+            }
+
+            // Associate tag with entity
+            await connection.query('INSERT INTO entity_knowledge_tags (entity_id, tag_id) VALUES (?, ?)', [entityId, tagId]);
+        }
+
+        // Insert phone number
+        if (data.phoneNumber) {
+            await connection.query('INSERT INTO entity_phones (entity_id, phone_number, submitted_by) VALUES (?, ?, ?)', [entityId, data.phoneNumber, data.userId]);
+        }
+
+        // Insert email
+        if (data.email) {
+            await connection.query('INSERT INTO entity_emails (entity_id, email, submitted_by) VALUES (?, ?, ?)', [entityId, data.email, data.userId]);
+        }
+
+        // Insert website
+        if (data.website) {
+            await connection.query('INSERT INTO entity_websites (entity_id, website_url, submitted_by) VALUES (?, ?, ?)', [entityId, data.website, data.userId]);
+        }
+
+        // Insert review
+        if (data.review) {
+            await connection.query('INSERT INTO entity_reviews (entity_id, review_text, submitted_by) VALUES (?, ?, ?)', [entityId, data.review, data.userId]);
+        }
+
+        // Commit transaction
+        await connection.commit();
+    } catch (error) {
+        // Rollback transaction on error
+        await connection.rollback();
+        pool.releaseConnection()
+        throw error;
+    }
+
+    pool.releaseConnection()
+}
+
+//function to retirev entites from db, either all locations or a specified location
+async function getEntities(location = null, limit = 9, tags = null) {
+    try {
+        let query;
+        let params = [];
+
+        // Create subquery for filtering entities based on tags
+        // Future consideration sort the values by number of matching tags
+        let tagsSubquery = '';
+        if (tags && tags.length) {
+            tagsSubquery = `
+                SELECT ekt.entity_id
+                FROM entity_knowledge_tags ekt
+                INNER JOIN tags t ON ekt.tag_id = t.tag_id
+                WHERE t.tag_name IN (?)
+                GROUP BY ekt.entity_id
+            `;
+            params.push(tags);
+        }
+
+        // Construct the WHERE clause for location and subquery from tags
+        let whereClauses = [];
+        if (tagsSubquery) {
+            whereClauses.push(`ke.entity_id IN (${tagsSubquery})`);
+        }
+        if (location) {
+            whereClauses.push("ke.location = ?");
+            params.push(location);
+        }
+
+
+        // join all querries
+        let whereClause = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+        // Main query
+        query = `
+            SELECT ke.*, 
+                   GROUP_CONCAT(DISTINCT em.email) AS emails, 
+                   GROUP_CONCAT(DISTINCT ep.phone_number) AS phone_numbers, 
+                   GROUP_CONCAT(DISTINCT ew.website_url) AS websites, 
+                   GROUP_CONCAT(DISTINCT er.review_text) AS reviews,
+                   GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_id) AS tags
+            FROM knowledge_entities ke
+            LEFT JOIN entity_emails em ON ke.entity_id = em.entity_id
+            LEFT JOIN entity_phones ep ON ke.entity_id = ep.entity_id
+            LEFT JOIN entity_websites ew ON ke.entity_id = ew.entity_id
+            LEFT JOIN entity_reviews er ON ke.entity_id = er.entity_id
+            LEFT JOIN entity_knowledge_tags ekt ON ke.entity_id = ekt.entity_id
+            LEFT JOIN tags t ON ekt.tag_id = t.tag_id
+            ${whereClause}
+            GROUP BY ke.entity_id
+            ORDER BY ke.entity_id DESC 
+            LIMIT ?
+        `;
+
+        // Add the limit to the parameters
+        params.push(limit);
+
+        const [rows] = await pool.query(query, params);
+        return rows;
+    } catch (error) {
+        console.error('Database error:', error);
+        throw error;
+    }
+}
+
+async function getMostUsedTags() {
+    try {
+        const query = `
+            SELECT t.tag_name, COUNT(ekt.tag_id) AS tag_count 
+            FROM tags t
+            JOIN entity_knowledge_tags ekt ON t.tag_id = ekt.tag_id
+            GROUP BY t.tag_id
+            ORDER BY tag_count DESC
+        `;
+
+        const [rows] = await pool.query(query);
+        return rows;
+    } catch (error) {
+        console.error('Database error:', error);
+        throw error;
+    }
+}
+
+//function to retrieve all the relevant data of a user
+async function getUserData(id) {
+    try {
+        const rows = await pool.execute(
+            `SELECT users.username, users.email, user_set_location.location_name, user_set_location.lat, user_set_location.lng
+            FROM users
+            LEFT JOIN user_set_location ON users.id = user_set_location.user_id
+            WHERE users.id = ?;`,
+            [id]
+        );
+        return rows[0][0]
+    } catch (error) {
+        console.error('Database error:', error);
+        throw error;
+    }
+}
+
+async function setUserLocation(data) {
+    
+    console.log([data.id, data.name, data.lat, data.lng]);
+    
+    try {
+        await pool.execute(
+            `INSERT INTO user_set_location (user_id, location_name, lat, lng)
+            VALUES (?, ?, ?, ?)  -- Use placeholders for values to be inserted
+            ON DUPLICATE KEY UPDATE
+                location_name = VALUES(location_name),
+                lat = VALUES(lat),
+                lng = VALUES(lng);`,
+            [data.id, data.name, data.lat, data.lng]
+        );
+        return true
+    } catch (error) {
+        console.error('Database error:', error);
+        throw error;
+    }
+}
+
+
+// Export all relevat functions
+module.exports = {
+    getUser,
+    createUser,
+    addEntityToDatabase,
+    getEntities,
+    getMostUsedTags,
+    getUserData,
+    setUserLocation
+} 
