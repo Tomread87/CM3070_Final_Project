@@ -289,7 +289,7 @@
     map.on('zoomend', function() {
         var currentZoomLevel = map.getZoom();
         var center = map.getCenter();
-    
+
 
         markersLayer.clearLayers()
         clickLayer.clearLayers()
@@ -495,6 +495,50 @@
         }
     })
 
+    // filter tags
+    document.getElementById('search-tags').addEventListener("input", (e) => {
+
+        let inputs = e.srcElement.value.split(",")
+        let tagContainer = document.querySelector(".tags-result-wrapper")
+        tagContainer.querySelectorAll(".entity-tag.entity-tag-selection").forEach(tag => {
+            let contains = false
+            inputs.forEach(inp => {
+                if (tag.innerText.includes(inp.trim())) {
+                    contains = true
+                }
+            })
+            if (contains) tag.classList.remove("hidden");
+            else tag.classList.add("hidden");
+        });
+    })
+
+    // Add cool spot button listener
+    document.getElementById('add-spot-map').addEventListener("click", (e) => {
+        console.log("cool spot");
+        addingSpot = true
+        if (addingSpot) document.getElementById('map').style.cursor = "url('/static/assets/icons/pin2.png'), auto";
+    })
+
+    // add custom curosr on add map
+    // Add custom cursor based on mouse position
+    document.addEventListener("mousemove", (e) => {
+        // Calculate mouse position relative to the map element
+        const mapRect = document.getElementById('map').getBoundingClientRect();
+        const mouseX = e.clientX - mapRect.left;
+        const mouseY = e.clientY - mapRect.top;
+        // Check if mouse is inside the map area
+        if (mouseX >= 0 && mouseX <= mapRect.width && mouseY >= 0 && mouseY <= mapRect.height && addingSpot) {
+            // Set custom cursor if inside the map area
+            document.querySelector('.map-container').style.cursor = "url('/static/assets/icons/pin2.png'), auto";
+        } else {
+            // Restore default cursor if outside the map area
+            document.querySelector('.map-container').style.cursor = 'grab';
+            addingSpot = false
+        }
+    });
+</script>
+
+<script>
     // create a marker a nd find closest cities when zooming
     async function changeHeight(element, qty) {
         let value = parseInt(element.style.height)
@@ -517,25 +561,6 @@
 
 
     }
-
-    // filter tags
-    document.getElementById('search-tags').addEventListener("input", (e) => {
-
-        let inputs = e.srcElement.value.split(",")
-        let tagContainer = document.querySelector(".tags-result-wrapper")
-        tagContainer.querySelectorAll(".entity-tag.entity-tag-selection").forEach(tag => {
-            let contains = false
-            inputs.forEach(inp => {
-                if (tag.innerText.includes(inp.trim())) {
-                    contains = true
-                }
-            })
-            if (contains) tag.classList.remove("hidden");
-            else tag.classList.add("hidden");
-        });
-    })
-
-    // Add cool spot button listener
 </script>
 
 <!-- Drag Map Code -->
