@@ -84,8 +84,8 @@
             .then(data => {
                 console.log('Success:', data);
                 // Process the response here
-                alert('Success: ' + data.message)
-                window.location.href = "/"
+                create_success_message(`${data.message}`,`Welcome onboard! You can now proceed to login and start adding local knowledge for you area`,"window.location.href = '/login'")
+                
             })
             .catch((error) => {
                 console.error('Error:', error);

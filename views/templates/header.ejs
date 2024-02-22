@@ -6,7 +6,7 @@
         </div>
         <!--div class="city selection"></div-->
         <% if (typeof user != 'undefined' && user) { %>
-        <div class="log-in-wrapper" style="display: flex; gap: 8px; align-items: center;">
+        <div class="log-in-wrapper" data-loggedIn="true" style="display: flex; gap: 8px; align-items: center;">
             Hi, <%= user.username %><span class="drop-down">⇓</span>
             <div id="user-nav-menu" class="hidden">
                 <a href="/profile">Profile</a>
@@ -15,7 +15,7 @@
         </div>
 
         <% } else { %>
-        <div class="log-in-wrapper" style="display: flex; gap: 8px;">
+        <div class="log-in-wrapper" data-loggedIn="false" style="display: flex; gap: 8px;">
             <button onclick="window.location.href='/login'" class="general-button" style="width: max-content;">Log In</button>
             <button onclick="window.location.href='/register'" class="general-button" style="width: max-content;">Sign Up</button>
         </div>

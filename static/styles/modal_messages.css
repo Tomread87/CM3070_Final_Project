@@ -1,0 +1,64 @@
+/********** EVERY THING MODAL***************/
+
+.modal-message-container {
+    box-sizing: border-box;
+    position: fixed;
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    top: 0;
+    left: 0;
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    background-color: #333b;
+}
+
+.inner-message-modal {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    text-align: center;
+    z-index: 20;
+    background: #fff;
+    width: 40%;
+    height: fit-content;
+    max-width: 340px;
+    padding: 26px;
+    /*border: solid 2px var(--main-green);*/
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    gap: 10px;
+}
+
+.modal-img {
+    max-height: var(--modal_max_h);
+    max-width: 80vw;
+    margin: auto 45px;
+    position: absolute;
+    background: #fff;
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+    border-radius: 8px;
+}
+
+
+.message-modal-anim {
+    animation: modal-anim;
+    animation-duration: 0.45s;
+    animation-iteration-count: 1;
+}
+
+@keyframes modal-anim {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 100;
+    }
+
+}
+
+/** END of Modal**/

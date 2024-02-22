@@ -50,16 +50,35 @@ const validateCreateEntity = [
     body('review').optional({ checkFalsy: true }).isLength({ max: 500 }).withMessage('Review must be less than 500 characters'),
     // custom validator for at least one contact detail
     body().custom(data => {
-        if (!data.email && !data.phoneNumber && !data.website) {
+        if (!data.email && !data.phoneNumber && !data.website && (!data.lat || !data.lng)) {
             throw new Error('At least one contact detail (email, phone number, or website) must be provided.');
         }
         return true;
     }),
     // location needs to be among the cities from allWorldCities
-    body('location').custom((value, { req }) => {
+    body('location').custom((value) => {
         const cityFound = allWorldCities.some(city => city.name === value);
         if (!cityFound) {
             throw new Error('Location must be a valid city.');
+        }
+        return true;
+    }),
+    // check that both lat & lng are either null or numbers
+    body().custom(({ lat, lng }) => {
+        if ((lat === null && lng !== null) || (lat !== null && lng === null)) {
+            throw new Error('Latitude and longitude must both be null or both be numbers.');
+        }
+        return true;
+    }),
+    body('lat').optional().custom(value => {
+        if (value !== null && (value < -90 || value > 90)) {
+            throw new Error('Latitude must be null or between -90 and 90.');
+        }
+        return true;
+    }),
+    body('lng').optional().custom(value => {
+        if (value !== null && (value < -180 || value > 180)) {
+            throw new Error('Longitude must be null or between -180 and 180.');
         }
         return true;
     })
@@ -68,7 +87,7 @@ const validateCreateEntity = [
 const validateGetEntites = [
     query('location')
         .optional() // Makes this field optional
-        .custom((value, { req }) => {
+        .custom((value) => {
             const cityFound = allWorldCities.some(city => city.name === value);
             if (!cityFound) {
                 throw new Error('Location must be a valid city from the list.');
@@ -81,7 +100,7 @@ const validateGetEntites = [
         .withMessage('Limit must be a positive integer.'),
     query('tags')
         .optional()
-        .custom((value, { req }) => {
+        .custom((value) => {
             // If it's a string, it's okay
             if (typeof value === 'string') return true;
 

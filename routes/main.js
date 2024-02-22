@@ -112,7 +112,7 @@ module.exports = function (app, db) {
 
             //create JSON webtoken
             createUserToken(res, existingUser, checkboxValue)
-            return res.status(200).json({ message: 'Login successful!' });
+            return res.status(200).json({ message: 'Login successful!', username: existingUser.username });
 
         } catch (error) {
             console.error('Database error:', error.message);
@@ -253,8 +253,11 @@ module.exports = function (app, db) {
             return res.status(400).json({ errors: errors.array() });
         }
 
+
+
+
         // Access validated data
-        const data = { entityName, entityTag, phoneNumber, email, website, review, location } = req.body;
+        const data = { entityName, entityTag, phoneNumber, email, website, review, location, lat, lng } = req.body;
 
         // Add user id to data
         data.userId = user.id

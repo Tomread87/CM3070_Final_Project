@@ -76,8 +76,8 @@
             .then(data => {
                 console.log('Success:', data);
                 // Process the response here
-                alert('Success: ' + data.message)
-                window.location.href = "/"
+                create_success_message("Login Succesful",`<div>Great to see you, <b>${data.username}</b>!<br>Ready to dive in?</div>`,"window.location.href = '/'")
+                //window.location.href = "/"
             })
             .catch((error) => {
                 console.error('Error:', error);

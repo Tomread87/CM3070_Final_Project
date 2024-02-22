@@ -54,7 +54,7 @@ async function addEntityToDatabase(data) {
         await connection.beginTransaction();
 
         // Insert into knowledge_entities and get the entity_id
-        const [entityResult] = await connection.query('INSERT INTO knowledge_entities (entity_name, location, submitted_by) VALUES (?, ?, ?)', [data.entityName, data.location, data.userId]);
+        const [entityResult] = await connection.query('INSERT INTO knowledge_entities (entity_name, location, submitted_by, lat, lng) VALUES (?, ?, ?, ?, ?)', [data.entityName, data.location, data.userId, data.lat, data.lng]);
         const entityId = entityResult.insertId;
 
         // Process and insert tags

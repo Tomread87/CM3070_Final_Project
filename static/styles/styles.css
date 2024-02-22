@@ -1,3 +1,8 @@
+:root {
+    /* Main design Colours */
+    --main-green: #4caf50
+}
+
 body {
     margin: 0;
     padding: 0;
@@ -102,7 +107,7 @@ input {
 }
 
 .submit-button, .general-button {
-    background-color: #4caf50;
+    background-color: var(--main-green);
     color: #fff;
     padding: 9px;
     border: none;
@@ -111,8 +116,15 @@ input {
     width: 100%;
     max-width: 350px;
     text-align: center;
-    border: solid 1px #4caf50;
+    border: solid 1px var(--main-green);
 }
+
+.cancel-button {
+    background-color: darkslategray;
+    border-color: darkslategray;
+}
+
+
 
 .submit-button:hover, .general-button:hover, .drop-down:hover {
     background-color: #4caf50cc;
@@ -120,10 +132,15 @@ input {
     border-color: #fff;
 }
 
+.cancel-button:hover {
+    background-color: darkslategray;
+    opacity: 0.9;
+}
+
 .submit-button:active, .general-button:active {
     transform: translate(0, 1px);
     background-color: #fff;
-    color: #4caf50;
+    color: var(--main-green);
     
 }
 
@@ -135,14 +152,14 @@ input {
 }
 
 .drop-down {
-    background-color: #4caf50;
+    background-color: var(--main-green);
     color: #fff;
     padding: 2px 8px;
     text-align: center;
     margin: auto 6px;
     border-radius: 4px;
     cursor: pointer;
-    border: solid 1px #4caf50;;
+    border: solid 1px var(--main-green);;
 }
 
 #user-nav-menu {
@@ -164,7 +181,7 @@ input {
 }
 
 #user-nav-menu a:hover {
-    background-color: #4caf50;
+    background-color: var(--main-green);
 }
 
 .find-me {
@@ -195,7 +212,7 @@ input {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #fff8;
+    background-color: #333b;
     z-index: 1000;
 }
 
@@ -207,7 +224,8 @@ input {
     box-shadow: 0 0 5px #3333;
     overflow-y: auto;
     position: relative;
-    font-size: 0.8em;
+    font-size: 0.75em;
+    border-radius: 8px ;
 }
 
 #create-entity > div:first-child {
@@ -248,7 +266,7 @@ input {
 
 .close-popup {
 
-    background-color: #4caf50;
+    background-color: var(--main-green);
     color: #fff;
     font-size: 1.5em;
     border: none;
@@ -265,7 +283,7 @@ input {
 .entity-card {
     width: 280px;
     margin: 10px;
-    border: solid 1px #4caf50;
+    border: solid 1px var(--main-green);
     background-color: #fff;
     text-align: left;
     padding: 12px;
@@ -286,6 +304,11 @@ input {
     width: fit-content;
 }
 
+.entity-card ul {
+    padding-left: 20px;
+
+}
+
 .entity-tag-selection {
     cursor: pointer;
 }
@@ -293,7 +316,7 @@ input {
 .entity-tag-selection:hover {
     scale: 1.01;
     opacity: 0.9;
-    background-color: #4caf5055;
+    background-color: var(--main-green)55;
 }
 
 .entity-card-tags {
@@ -303,7 +326,7 @@ input {
 
 .entity-tag {
     padding: 3px 6px;
-    border: solid 1px #4caf50;
+    border: solid 1px var(--main-green);
     border-radius: 4px;
     margin-top: 4px;
     margin-right: 4px;
@@ -319,7 +342,7 @@ input {
 
 .selected {
     color: #fff;
-    background-color: #4caf50;
+    background-color: var(--main-green);
 }
 
 .hidden {
@@ -354,8 +377,7 @@ input {
 }
 
 #drag-map > div:hover {
-    background-color: #333;
-    cursor: grab;
+    background-color: #333b;
 }
 
 #drag-map > div::before,
@@ -372,15 +394,30 @@ input {
 }
 
 #drag-map > div::before {
-    top: -8px;
+    top: -7px;
     /* Adjust based on the size of the triangle to position above the slider */
     border-bottom: 6px solid #333;
     /* Color and size of the top triangle */
 }
 
 #drag-map > div::after {
-    bottom: -8px;
+    bottom: -7px;
     /* Adjust based on the size of the triangle to position below the slider */
     border-top: 6px solid #333;
     /* Color and size of the bottom triangle */
+}
+
+.custom-cursor-pin {
+    cursor: url('/static/assets/icons/pin2.png'), auto !important
+}
+
+.inputed-tags-container {
+    display: flex;
+    max-width: 600px;
+    flex-wrap: wrap;
+}
+
+.inputed-tags-error {
+    color: red;
+    margin-top: 6px;
 }

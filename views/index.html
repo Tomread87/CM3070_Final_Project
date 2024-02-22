@@ -13,12 +13,12 @@
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 
     <!-- Load other CSS stylesheets -->
-    <link rel="stylesheet" href="/static/styles/styles.css" />
     <link rel="stylesheet" href="/static/styles/custom_icons.css" />
 
-    <!-- Inlude geolocalization and other scripts -->
+    <!-- Include geolocalization and other scripts -->
     <script src="/static/scripts/geolocalization.js"></script>
     <script src="/static/scripts/home.js"></script>
+
 </head>
 
 <body>
@@ -44,7 +44,7 @@
 
         <div id="location-selection-wrapper" class="expand-container">
             <div>
-
+                <div id="show-city-name"></div>
             </div>
             <h2>Select your Location</h2>
             <div style="display: flex; justify-content: center;">
@@ -68,7 +68,7 @@
                     <span>or</span><button class="submit-button" id="find-my-location">Find Where I Am</button>
                 </div>
             </div>
-            <div id="show-city-name"></div>
+            
 
         </div>
 
@@ -153,8 +153,13 @@
     var clickLayer = L.layerGroup().addTo(map);
     var markersLayer = L.layerGroup().addTo(map);
     var addingSpot = false
-    var currentLocation = {}
+    var currentLocation = null
 
+    function clearAllLayers() {
+        findMeLayer.clearLayers()
+        clickLayer.clearLayers()
+        markersLayer.clearLayers()
+    }
 
 
     // Add a tile layer
@@ -168,7 +173,7 @@
         var radius = e.accuracy / 2;
 
         // remove previose markers and circle
-        findMeLayer.clearLayers()
+        clearAllLayers()
 
         // Add a marker at the current location
         var marker = L.marker(e.latlng)
@@ -209,7 +214,7 @@
 
     // Function to handle geolocation error
     function onLocationError(e) {
-        alert(e.message);
+        create_alert_message("Attention", e.message);
     }
 
     // Attempt to get the user's location, use promise to to get return value of current location
@@ -245,6 +250,7 @@
 
     // Set chosen location
     async function setLocation(location) {
+
 
         const name = location.name
         const data = await JSON.stringify({
@@ -285,35 +291,35 @@
 
     }
 
-    //map to check add the pointers on the map
-    map.on('zoomend', function() {
-        var currentZoomLevel = map.getZoom();
-        var center = map.getCenter();
-
-
-        markersLayer.clearLayers()
-        clickLayer.clearLayers()
-        var marker = L.marker(center)
-        clickLayer.addLayer(marker)
-
-        fetchClosestCity(center.lat, center.lng, 5).then(cities => {
-            addCityMarkers(cities, center)
-        });
-    });
-
     // Function to add a marker on the map where the user clicks
     function exploreMapOnClick(e) {
-        clickLayer.clearLayers()
 
-        // Create a marker and popup
-        var marker = L.marker(e.latlng)
-        marker.bindPopup("You clicked the map at " + e.latlng.toString()).openPopup();
+        if (!addingSpot) {
+            clearAllLayers()
 
-        clickLayer.addLayer(marker)
+            // Create a marker and popup
+            var marker = L.marker(e.latlng)
+            marker.bindPopup("You clicked the map at " + e.latlng.toString()).openPopup();
 
-        fetchClosestCity(e.latlng.lat, e.latlng.lng, 5).then(cities => {
-            addCityMarkers(cities, e.latlng)
-        });
+            clickLayer.addLayer(marker)
+
+            fetchClosestCity(e.latlng.lat, e.latlng.lng, 5).then(cities => {
+                addCityMarkers(cities, e.latlng)
+            });
+        } else {
+            fetchClosestCity(e.latlng.lat, e.latlng.lng, 1).then(cities => {
+                const input = {
+                    name: cities[0].name,
+                    lat: e.latlng.lat,
+                    lng: e.latlng.lng
+                }
+
+                createKnowledgePopup(input, true)
+            });
+            
+        }
+
+
 
     }
 
@@ -328,9 +334,6 @@
                 iconAnchor: [0, 10], // Anchor point of the icon to the marker
             });
         }
-
-        markersLayer.clearLayers()
-
 
         //ad marker and popuo for each city
         array.forEach(city => {
@@ -366,8 +369,28 @@
         })
     }
 
+    function setMarker(latlng) {
+        markersLayer.clearLayers()
+        var marker = L.marker(latlng)
+        markersLayer.addLayer(marker)
+    }
     // Listen for click event on the map
     map.on('click', exploreMapOnClick);
+
+    //map to check add the pointers on the map
+    /*map.on('zoomend', function() {
+        var currentZoomLevel = map.getZoom();
+        var center = map.getCenter();
+
+
+        clearAllLayers()
+        var marker = L.marker(center)
+        clickLayer.addLayer(marker)
+
+        fetchClosestCity(center.lat, center.lng, 5).then(cities => {
+            addCityMarkers(cities, center)
+        });
+    });*/
 </script>
 
 <!-- Event Listeners -->
@@ -431,7 +454,7 @@
 
     // Create a popup to add entites
     document.getElementById('show-addentity-popup').addEventListener('click', () => {
-        createKnowledgePopup()
+        createKnowledgePopup(currentLocation)
     })
 
     // Select tags for search
@@ -456,7 +479,7 @@
     // get knowledge from searched tags
     document.getElementById('search-entities').addEventListener("click", () => {
         const selected = document.querySelectorAll(".entity-tag-selection.selected")
-        if (selected.length == 0) return alert("no tags selected")
+        if (selected.length == 0) return create_alert_message("Attention", "no tags selected")
 
         const location = JSON.parse(localStorage.getItem("location"))
 
@@ -514,53 +537,21 @@
 
     // Add cool spot button listener
     document.getElementById('add-spot-map').addEventListener("click", (e) => {
-        console.log("cool spot");
-        addingSpot = true
-        if (addingSpot) document.getElementById('map').style.cursor = "url('/static/assets/icons/pin2.png'), auto";
+
+        const button = e.target
+
+        button.innerText = button.innerText == "Add Spot on Map" ? "Cancel Action" : "Add Spot on Map"
+
+        addingSpot = !addingSpot
+
+        if (addingSpot) {
+            document.getElementById('map').classList.add("custom-cursor-pin")
+            document.querySelector('.map-container').classList.add("custom-cursor-pin")
+        } else {
+            document.getElementById('map').classList.remove("custom-cursor-pin")
+            document.querySelector('.map-container').classList.remove("custom-cursor-pin")
+        }
     })
-
-    // add custom curosr on add map
-    // Add custom cursor based on mouse position
-    document.addEventListener("mousemove", (e) => {
-        // Calculate mouse position relative to the map element
-        const mapRect = document.getElementById('map').getBoundingClientRect();
-        const mouseX = e.clientX - mapRect.left;
-        const mouseY = e.clientY - mapRect.top;
-        // Check if mouse is inside the map area
-        if (mouseX >= 0 && mouseX <= mapRect.width && mouseY >= 0 && mouseY <= mapRect.height && addingSpot) {
-            // Set custom cursor if inside the map area
-            document.querySelector('.map-container').style.cursor = "url('/static/assets/icons/pin2.png'), auto";
-        } else {
-            // Restore default cursor if outside the map area
-            document.querySelector('.map-container').style.cursor = 'grab';
-            addingSpot = false
-        }
-    });
-</script>
-
-<script>
-    // create a marker a nd find closest cities when zooming
-    async function changeHeight(element, qty) {
-        let value = parseInt(element.style.height)
-
-        value = value + qty
-        element.style.height = String(value) + 'px'
-
-        if (qty < 0) {
-            if (value > 0) setTimeout(() => {
-                return changeHeight(element, qty)
-            }, 1)
-            else element.style.height = '0px'
-        } else {
-            if (value < 500) setTimeout(() => {
-                return changeHeight(element, qty)
-            }, 1)
-            else element.style.height = '500px'
-        }
-
-
-
-    }
 </script>
 
 <!-- Drag Map Code -->
@@ -586,7 +577,6 @@
             const maxHeight = 0.8 * window.innerHeight; // Maximum height (80vh)
             newHeight = Math.max(minHeight, Math.min(newHeight, maxHeight));
             mapElement.style.height = `${newHeight}px`;
-
         }
 
         function onMouseUp() {
@@ -603,25 +593,16 @@
     });
 </script>
 
-<!-- Show All options if localStorage location exists -->
+<!-- Show All options if location exists or is selected -->
 <script>
     window.onload = async () => {
         const location = await JSON.parse(localStorage.getItem("location"))
 
         if (location) {
+            currentLocation = location
             showAllSections(location.name);
             getEntities(location.name, 9).then(data => fillCardsContainer(data, '#recent-entities-container'))
-
             goToLocation(map, location.lat, location.lng, 15)
-
-
-        } else {
-            /*locateUser().then(e => {
-                // show pin on map
-                onLocationFound(e)
-            }).catch(error => {
-                console.error('Location error:', error);
-            });*/
         }
     }
 </script>
