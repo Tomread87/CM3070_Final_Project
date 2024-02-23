@@ -1,6 +1,6 @@
 const { query, body, matchedData, validationResult } = require('express-validator');
 const { hash_password, compare_hash_password, createUserToken, authenticateToken } = require('../serverside_scripts/authFuncs.js')
-const { getAllCountries, getAllCitiesOfCountry, getClosestCity, getClosestCities, allWorldCities } = require('../serverside_scripts/cities.js');
+const { getAllCountries, getAllCitiesOfCountry, getClosestCity, getClosestCities, getClosestStates, allWorldCities, getClosestCountries } = require('../serverside_scripts/cities.js');
 const validationParam = require("./validationParam.js")
 
 module.exports = function (app, db) {
@@ -19,6 +19,8 @@ module.exports = function (app, db) {
             user = await db.getUserData(req.user.id)
             user.id = req.user.id
         }
+
+        
         
         return res.render("index.html", { allCountries, user, mostUsedTags })
     })
@@ -135,7 +137,30 @@ module.exports = function (app, db) {
 
         user = await db.getUserData(user.id)
 
-        return res.render("profile.html", { user })
+        const createdEntities = await db.getUserCreatedEntities(user.id)
+
+        
+        // Get statistics
+        const uniqueCountryCodes = new Set();
+        const uniqueLocations = new Set();
+        let nonNullLatCount = 0;
+
+        createdEntities.forEach(entity => {
+            uniqueCountryCodes.add(entity.countryCode);
+            uniqueLocations.add(entity.location);
+            if (entity.lat !== null) {
+                nonNullLatCount++;
+            }
+        });
+
+        const statistics = {
+            totalEntities: createdEntities.length,
+            totalCountries: uniqueCountryCodes.size,
+            totalSpots: nonNullLatCount,
+            totalLocations: uniqueLocations.size
+        }      
+
+        return res.render("profile.html", { user, createdEntities, statistics })
     })
 
     // --- Restful API ---//
@@ -177,23 +202,75 @@ module.exports = function (app, db) {
         const lon = Number(longitude);
         const quantity = Number(qty);
 
-        var closestCities
+        var closestLocations
 
         if (quantity == 1) {
-            closestCities = [getClosestCity(allWorldCities, lat, lon)] //if we are searching only one city we use getClosestCity, it takes half the time compared to getClosestCities
+            closestLocations = [getClosestCity(allWorldCities, lat, lon)] //if we are searching only one city we use getClosestCity, it takes half the time compared to getClosestCities
         } else {
-            closestCities = getClosestCities(allWorldCities, lat, lon, qty)
+            closestLocations = getClosestCities(allWorldCities, lat, lon, qty)
         }
 
-
-        if (closestCities) {
-            res.json(closestCities);
+        if (closestLocations) {
+            return res.json(closestLocations);
         } else {
-            res.status(404).send('No city found.');
+            return res.status(404).send('No city found.');
         }
     });
 
-    app.get("/getentities", validationParam.validateGetEntites, async (req, res) => {
+    app.get("/findstatesfromcoord", validationParam.validateQueryLonLatQty, (req, res) => {
+
+        // validate entries
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { latitude, longitude, qty} = req.query;
+
+        // Convert string query parameters to numbers
+        const lat = Number(latitude);
+        const lng = Number(longitude);
+        const radius = Number(qty);
+
+        var closestLocations
+
+        closestLocations = getClosestStates(lat, lng, radius,)
+
+
+        if (closestLocations) {
+            return res.json(closestLocations);
+        } else {
+            return res.status(404).send('No city found.');
+        }
+    });
+
+    app.get("/findcountriesfromcoord", validationParam.validateQueryLonLatQty, (req, res) => {
+
+        // validate entries
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { latitude, longitude, qty } = req.query;
+
+        // Convert string query parameters to numbers
+        const lat = Number(latitude);
+        const lng = Number(longitude);
+        const radius = Number(qty);
+
+        var closestLocations
+
+        closestLocations = getClosestCountries(lat, lng, radius)
+
+        if (closestLocations) {
+            return res.json(closestLocations);
+        } else {
+            return res.status(404).send('No city found.');
+        }
+    });
+
+    app.get("/getentities", validationParam.validateGetEntities, async (req, res) => {
 
         // Check for validation errors
         const errors = validationResult(req);
@@ -213,6 +290,89 @@ module.exports = function (app, db) {
             const entities = await db.getEntities(location, numericLimit, tags);
 
             return res.json({ entities: entities, location: location });
+        } catch (error) {
+            console.error('Database error:', error);
+            return res.status(500).send('Internal Server Error');
+        }
+
+    })
+
+    app.get("/getstateentities", validationParam.validateGetStateEntities, async (req, res) => {
+
+        // Check for validation errors
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        //retrieve data from query
+        const { isoCode, countryCode, limit, tags } = req.query
+
+        try {
+            const numericLimit = parseInt(limit, 10) || 9; // Default to 9 if limit is not provided or invalid
+
+            // Ensure tags is always an array even if only one tag is sent
+            let tagsArray = Array.isArray(tags) ? tags : (tags ? [tags] : []);
+
+            const entities = await db.getStateEntities(isoCode, countryCode, numericLimit, tagsArray);
+
+            return res.json({ entities: entities});
+        } catch (error) {
+            console.error('Database error:', error);
+            return res.status(500).send('Internal Server Error');
+        }
+
+    })
+
+    app.get("/getcountryentities", validationParam.validateGetCountryEntities, async (req, res) => {
+
+        // Check for validation errors
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        //retrieve data from query
+        const { countryCode, limit, tags } = req.query
+
+        try {
+            const numericLimit = parseInt(limit, 10) || 9; // Default to 9 if limit is not provided or invalid
+
+            // Ensure tags is always an array even if only one tag is sent
+            let tagsArray = Array.isArray(tags) ? tags : (tags ? [tags] : []);
+
+            const entities = await db.getCountryEntities(countryCode, numericLimit, tagsArray);
+
+            return res.json({ entities: entities});
+        } catch (error) {
+            console.error('Database error:', error);
+            return res.status(500).send('Internal Server Error');
+        }
+
+    })
+
+    app.get("/getuserentities", validationParam.validateUserEntities, authenticateToken, async (req, res) => {
+        
+        // Check for validation errors
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        return res.send(req.user)
+
+        //retrieve data from query
+        const { countryCode, limit, tags } = req.query
+
+        try {
+            const numericLimit = parseInt(limit, 10) || 9; // Default to 9 if limit is not provided or invalid
+
+            // Ensure tags is always an array even if only one tag is sent
+            let tagsArray = Array.isArray(tags) ? tags : (tags ? [tags] : []);
+
+            const entities = await db.getCountryEntities(countryCode, numericLimit, tagsArray);
+
+            return res.json({ entities: entities});
         } catch (error) {
             console.error('Database error:', error);
             return res.status(500).send('Internal Server Error');
@@ -241,7 +401,6 @@ module.exports = function (app, db) {
     })
 
     // --- Create Entities ---//
-
     app.post("/createentity", validationParam.validateCreateEntity, authenticateToken, async (req, res) => {
 
         const user = req.user
@@ -253,15 +412,24 @@ module.exports = function (app, db) {
             return res.status(400).json({ errors: errors.array() });
         }
 
-
-
-
         // Access validated data
-        const data = { entityName, entityTag, phoneNumber, email, website, review, location, lat, lng } = req.body;
+        const data = { entityName, entityTag, phoneNumber, email, website, review, location,
+            locationLat, locationLng, lat, lng } = req.body;
 
-        // Add user id to data
+        // Get Country Code and State Code
+        let city
+        if (!lat && !lng) {
+            city = getClosestCity(allWorldCities, locationLat, locationLng)
+        } else {
+            city = getClosestCity(allWorldCities, lat, lng)
+        }
+
+        // Add user id, stateCode and countryCode to data
         data.userId = user.id
+        data.countryCode = city.countryCode
+        data.stateCode = city.stateCode
 
+        //find state and country from 
         try {
             await db.addEntityToDatabase(data)
         } catch (error) {

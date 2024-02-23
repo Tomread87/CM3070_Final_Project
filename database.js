@@ -27,6 +27,22 @@ async function getUser(email = null, username = null) {
     return rows[0][0]
 }
 
+//function to retrieve all the relevant data of a user
+async function getUserData(id) {
+    try {
+        const rows = await pool.execute(
+            `SELECT u.username, u.email, u.join_date, usl.location_name, usl.lat, usl.lng
+            FROM users as u
+            LEFT JOIN user_set_location as usl ON u.id = usl.user_id
+            WHERE u.id = ?;`,
+            [id]
+        );
+        return rows[0][0]
+    } catch (error) {
+        console.error('Database error:', error);
+        throw error;
+    }
+}
 
 //function to register a new user into the database
 async function createUser(username, email, hashed_password) {
@@ -54,7 +70,10 @@ async function addEntityToDatabase(data) {
         await connection.beginTransaction();
 
         // Insert into knowledge_entities and get the entity_id
-        const [entityResult] = await connection.query('INSERT INTO knowledge_entities (entity_name, location, submitted_by, lat, lng) VALUES (?, ?, ?, ?, ?)', [data.entityName, data.location, data.userId, data.lat, data.lng]);
+        const [entityResult] =
+            await connection.query('INSERT INTO knowledge_entities (entity_name, location, submitted_by, lat, lng, stateCode, countryCode) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [data.entityName, data.location, data.userId, data.lat, data.lng, data.stateCode, data.countryCode]);
+
         const entityId = entityResult.insertId;
 
         // Process and insert tags
@@ -107,8 +126,8 @@ async function addEntityToDatabase(data) {
     pool.releaseConnection()
 }
 
-//function to retirev entites from db, either all locations or a specified location
-async function getEntities(location = null, limit = 9, tags = null) {
+//function to retirev entities from db, either all locations or a specified location
+async function getEntities(location = null, limit = 9, tags = []) {
     try {
         let query;
         let params = [];
@@ -116,7 +135,7 @@ async function getEntities(location = null, limit = 9, tags = null) {
         // Create subquery for filtering entities based on tags
         // Future consideration sort the values by number of matching tags
         let tagsSubquery = '';
-        if (tags && tags.length) {
+        if (tags.length > 0) {
             tagsSubquery = `
                 SELECT ekt.entity_id
                 FROM entity_knowledge_tags ekt
@@ -124,6 +143,7 @@ async function getEntities(location = null, limit = 9, tags = null) {
                 WHERE t.tag_name IN (?)
                 GROUP BY ekt.entity_id
             `;
+            tags = tags.length > 0 ? tags : "";
             params.push(tags);
         }
 
@@ -142,25 +162,160 @@ async function getEntities(location = null, limit = 9, tags = null) {
         let whereClause = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
         // Main query
-        query = `
-            SELECT ke.*, 
-                   GROUP_CONCAT(DISTINCT em.email) AS emails, 
-                   GROUP_CONCAT(DISTINCT ep.phone_number) AS phone_numbers, 
-                   GROUP_CONCAT(DISTINCT ew.website_url) AS websites, 
-                   GROUP_CONCAT(DISTINCT er.review_text) AS reviews,
-                   GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_id) AS tags
-            FROM knowledge_entities ke
-            LEFT JOIN entity_emails em ON ke.entity_id = em.entity_id
-            LEFT JOIN entity_phones ep ON ke.entity_id = ep.entity_id
-            LEFT JOIN entity_websites ew ON ke.entity_id = ew.entity_id
-            LEFT JOIN entity_reviews er ON ke.entity_id = er.entity_id
-            LEFT JOIN entity_knowledge_tags ekt ON ke.entity_id = ekt.entity_id
-            LEFT JOIN tags t ON ekt.tag_id = t.tag_id
-            ${whereClause}
-            GROUP BY ke.entity_id
-            ORDER BY ke.entity_id DESC 
-            LIMIT ?
-        `;
+        query = createMainGetEntitiesQuery(whereClause)
+
+        // Add the limit to the parameters
+        params.push(limit);
+
+        const [rows] = await pool.query(query, params);
+        return rows;
+    } catch (error) {
+        console.error('Database error:', error);
+        throw error;
+    }
+}
+
+//function to retirev entities from db that match the state code
+async function getStateEntities(isoCode, countryCode, limit = 9, tags = []) {
+    try {
+        let query;
+        let params = [];
+
+        // Create subquery for filtering entities based on tags
+        // Future consideration sort the values by number of matching tags
+        
+        let tagsSubquery = '';
+        if (tags.length > 0) {
+             
+            tagsSubquery = `
+                SELECT ekt.entity_id
+                FROM entity_knowledge_tags ekt
+                INNER JOIN tags t ON ekt.tag_id = t.tag_id
+                WHERE t.tag_name IN (?)
+                GROUP BY ekt.entity_id
+            `;
+            
+            params.push(tags);
+        }
+
+        // Construct the WHERE clause for location and subquery from tags
+        let whereClauses = [];
+        if (tagsSubquery) {
+            whereClauses.push(`ke.entity_id IN (${tagsSubquery})`);
+        }
+        if (isoCode && countryCode) {
+            whereClauses.push("ke.stateCode = ? and ke.countryCode = ?");
+            params.push(isoCode);
+            params.push(countryCode);
+        }
+
+
+        // join all querries
+        let whereClause = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+        // Main query
+        query = createMainGetEntitiesQuery(whereClause)
+
+        // Add the limit to the parameters
+        params.push(limit);
+
+
+
+        const [rows] = await pool.query(query, params);
+
+        return rows;
+    } catch (error) {
+        console.error('Database error:', error);
+        throw error;
+    }
+}
+
+//function to retrieve entities from db that match the country code
+async function getCountryEntities(countryCode, limit = 9, tags = []) {
+    try {
+        let query;
+        let params = [];
+
+        // Create subquery for filtering entities based on tags
+        // Future consideration sort the values by number of matching tags
+        let tagsSubquery = '';
+        if (tags.length > 0) {
+            tagsSubquery = `
+                SELECT ekt.entity_id
+                FROM entity_knowledge_tags ekt
+                INNER JOIN tags t ON ekt.tag_id = t.tag_id
+                WHERE t.tag_name IN (?)
+                GROUP BY ekt.entity_id
+            `;
+            tags = tags.length > 0 ? tags : "";
+            params.push(tags);
+        }
+
+        // Construct the WHERE clause for location and subquery from tags
+        let whereClauses = [];
+        if (tagsSubquery) {
+            whereClauses.push(`ke.entity_id IN (${tagsSubquery})`);
+        }
+        if (countryCode) {
+            whereClauses.push("ke.countryCode = ?");
+            params.push(countryCode);
+        }
+
+
+        // join all querries
+        let whereClause = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+        // Main query
+        query = createMainGetEntitiesQuery(whereClause)
+
+        // Add the limit to the parameters
+        params.push(limit);
+
+        const [rows] = await pool.query(query, params);
+        return rows;
+    } catch (error) {
+        console.error('Database error:', error);
+        throw error;
+    }
+}
+
+// get all teh entites created by a user and possibly filter it by the tags
+async function getUserCreatedEntities(userId, tags = [], limit = 50) {
+    try {
+        let query;
+        let params = [];
+
+        // Create subquery for filtering entities based on tags
+        // Future consideration sort the values by number of matching tags
+        let tagsSubquery = '';
+        if (tags.length > 0) {
+            tagsSubquery = `
+                SELECT ekt.entity_id
+                FROM entity_knowledge_tags ekt
+                INNER JOIN tags t ON ekt.tag_id = t.tag_id
+                WHERE t.tag_name IN (?)
+                GROUP BY ekt.entity_id
+            `;
+            tags = tags.length > 0 ? tags : "";
+            params.push(tags);
+        }
+
+        // Construct the WHERE clause to filter the query
+        let whereClauses = [];
+        if (tagsSubquery) {
+            whereClauses.push(`ke.entity_id IN (${tagsSubquery})`);
+        }
+        if (userId) {
+            whereClauses.push("ke.submitted_by = ?");
+            params.push(userId);
+        }
+
+
+        // join all querries
+        let whereClause = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+        // Main query
+        query = createMainGetEntitiesQuery(whereClause)
 
         // Add the limit to the parameters
         params.push(limit);
@@ -191,27 +346,12 @@ async function getMostUsedTags() {
     }
 }
 
-//function to retrieve all the relevant data of a user
-async function getUserData(id) {
-    try {
-        const rows = await pool.execute(
-            `SELECT users.username, users.email, user_set_location.location_name, user_set_location.lat, user_set_location.lng
-            FROM users
-            LEFT JOIN user_set_location ON users.id = user_set_location.user_id
-            WHERE users.id = ?;`,
-            [id]
-        );
-        return rows[0][0]
-    } catch (error) {
-        console.error('Database error:', error);
-        throw error;
-    }
-}
+
 
 async function setUserLocation(data) {
-    
+
     console.log([data.id, data.name, data.lat, data.lng]);
-    
+
     try {
         await pool.execute(
             `INSERT INTO user_set_location (user_id, location_name, lat, lng)
@@ -230,12 +370,44 @@ async function setUserLocation(data) {
 }
 
 
+
+
+// this is the main query to get all the entity information
+function createMainGetEntitiesQuery(whereClause) {
+    return `
+    SELECT ke.*, 
+           GROUP_CONCAT(DISTINCT em.email) AS emails, 
+           GROUP_CONCAT(DISTINCT ep.phone_number) AS phone_numbers, 
+           GROUP_CONCAT(DISTINCT ew.website_url) AS websites, 
+           GROUP_CONCAT(DISTINCT er.review_text) AS reviews,
+           GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_id) AS tags,
+           u.username,
+           u.email AS user_email,
+           u.join_date
+    FROM knowledge_entities ke
+    LEFT JOIN entity_emails em ON ke.entity_id = em.entity_id
+    LEFT JOIN entity_phones ep ON ke.entity_id = ep.entity_id
+    LEFT JOIN entity_websites ew ON ke.entity_id = ew.entity_id
+    LEFT JOIN entity_reviews er ON ke.entity_id = er.entity_id
+    LEFT JOIN entity_knowledge_tags ekt ON ke.entity_id = ekt.entity_id
+    LEFT JOIN tags t ON ekt.tag_id = t.tag_id
+    LEFT JOIN users u ON ke.submitted_by = u.id
+    ${whereClause}
+    GROUP BY ke.entity_id
+    ORDER BY ke.entity_id DESC 
+    LIMIT ?
+`
+}
+
 // Export all relevat functions
 module.exports = {
     getUser,
     createUser,
     addEntityToDatabase,
     getEntities,
+    getStateEntities,
+    getCountryEntities,
+    getUserCreatedEntities,
     getMostUsedTags,
     getUserData,
     setUserLocation

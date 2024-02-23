@@ -1,3 +1,114 @@
+
+// Function to fetch cities by country ISO code
+function fetchCitiesByIsoCode(isoCode) {
+    // Construct the URL with the ISO code query parameter
+    const url = new URL('/isocountrycities', window.location.origin);
+    url.searchParams.append('isocode', isoCode);
+
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            //cache data
+            cities = data.allCountryCities
+
+            //update the options in the city search
+            updateCitySuggestions(cities)
+        })
+        .catch(error => {
+            console.error('There has been a problem with your fetch operation:', error);
+        });
+}
+
+//function to populate native datalist with data, the data list works on chrome and firefox not edge -> look for solution in the future
+function updateCitySuggestions(cities) {
+    const cityList = document.getElementById('city_suggestions');
+    cityList.innerHTML = ''; // Clear existing options
+
+    cities.forEach(city => {
+        const option = document.createElement('option');
+        option.value = city.name; // Assuming city objects have a 'name' property
+        cityList.appendChild(option);
+        option.innerText = city.name
+    });
+}
+
+//returns the coordinates of a city if it's available in the cached cities
+function getCityCoordinates(cityName, cities) {
+    // Find the city object where the name matches cityName
+    const city = cities.find(city => city.name === cityName);
+
+    // Return the found city object or null if not found
+    return city || null;
+}
+
+// get the x number of closest city name based on latitude and longitude
+async function fetchClosestCity(latitude, longitude, quantity = 1) {
+    const url = new URL('/findlocationsfromCoord', window.location.origin);
+    url.searchParams.append('latitude', latitude);
+    url.searchParams.append('longitude', longitude);
+    url.searchParams.append('qty', quantity);
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('Network response was not ok: ' + response.statusText);
+        }
+        const data = await response.json();
+        //console.log('Closest city:', data);
+        return data; // Returns the fetched data
+    } catch (error) {
+        console.error('Error fetching the closest city:', error);
+        throw error; // Rethrows the error to be handled where the function is called
+    }
+}
+
+// get the x number of closest city name based on latitude and longitude
+async function fetchClosestStates(latitude, longitude, distance) {
+    const url = new URL('/findstatesfromcoord', window.location.origin);
+    url.searchParams.append('latitude', latitude);
+    url.searchParams.append('longitude', longitude);
+    url.searchParams.append('qty', distance);
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('Network response was not ok: ' + response.statusText);
+        }
+        const data = await response.json();
+        //console.log('Closest city:', data);
+        return data; // Returns the fetched data
+    } catch (error) {
+        console.error('Error fetching the closest city:', error);
+        throw error; // Rethrows the error to be handled where the function is called
+    }
+}
+
+// get the x number of closest city name based on latitude and longitude
+async function fetchClosestCountries(latitude, longitude, distance, quantity = 1) {
+    const url = new URL('/findcountriesfromcoord', window.location.origin);
+    url.searchParams.append('latitude', latitude);
+    url.searchParams.append('longitude', longitude);
+    url.searchParams.append('qty', distance);
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('Network response was not ok: ' + response.statusText);
+        }
+        const data = await response.json();
+        //console.log('Closest city:', data);
+        return data; // Returns the fetched data
+    } catch (error) {
+        console.error('Error fetching the closest city:', error);
+        throw error; // Rethrows the error to be handled where the function is called
+    }
+}
+
 // Creates the popup window t add local knowledge
 function createKnowledgePopup(input = currentLocation, includeCoord = false) {
 
@@ -155,7 +266,6 @@ function createKnowledgePopup(input = currentLocation, includeCoord = false) {
     })
 }
 
-
 // Fetch Request to Add Entity 
 async function submitNewEntityForm() {
 
@@ -166,6 +276,7 @@ async function submitNewEntityForm() {
     const website = document.getElementById('contact-website').value;
     const review = document.querySelector('textarea[name="entity-review"]').value.trim();
     const location = await JSON.parse(localStorage.getItem("location"))
+
 
     var entityLatitutde = document.getElementById('entity-latitude') ? document.getElementById('entity-latitude').value : null;
     var entityLongitude = document.getElementById('entity-longitude') ? document.getElementById('entity-longitude').value : null;
@@ -198,6 +309,8 @@ async function submitNewEntityForm() {
         website: website,
         review: review,
         location: location.name,
+        locationLat: location.lat,
+        locationLng: location.lng,
         lat: entityLatitutde,
         lng: entityLongitude
     };
@@ -235,7 +348,6 @@ async function submitNewEntityForm() {
 
 }
 
-
 // Fetch request to get entities
 async function getEntities(location, limit, tags) {
 
@@ -262,6 +374,63 @@ async function getEntities(location, limit, tags) {
     return data
 }
 
+// Fetch request to get entities
+async function getStateEntities(isoCode, countryCode, limit, tags) {
+
+    // Create the url depending on the parameters
+    const url = new URL('/getstateentities', window.location.origin);
+    if (!isoCode && !countryCode) return console.error('Error:', error);
+
+    url.searchParams.append('isoCode', isoCode);
+    url.searchParams.append('countryCode', countryCode);
+    
+    if (limit) url.searchParams.append('limit', limit);
+    if (tags && tags.length) {
+        // Express automatically converts multiple query parameters with the same name into an array.
+        tags.forEach(tag => url.searchParams.append('tags', tag));
+    }
+
+
+    // Use fetch API to send the data to the server
+    const response = await fetch(url, {
+        method: 'GET',
+    }).catch((error) => {
+        console.error('Error:', error);
+        // Handle errors here
+    });
+
+    const data = await response.json()
+
+    return data
+}
+
+// Fetch request to get entities
+async function getCountryEntities(countryCode, limit, tags) {
+
+    // Create the url depending on the parameters
+    const url = new URL('/getcountryentities', window.location.origin);
+    if (!countryCode) return console.error('Error:', error);
+
+    url.searchParams.append('countryCode', countryCode);
+    
+    if (limit) url.searchParams.append('limit', limit);
+    if (tags && tags.length) {
+        // Express automatically converts multiple query parameters with the same name into an array.
+        tags.forEach(tag => url.searchParams.append('tags', tag));
+    }
+
+
+    // Use fetch API to send the data to the server
+    const response = await fetch(url, {
+        method: 'GET',
+    }).catch((error) => {
+        console.error('Error:', error);
+    });
+
+    const data = await response.json()
+
+    return data
+}
 
 // Create card
 function createCard(data) {
@@ -315,7 +484,12 @@ function createCard(data) {
                 <img src="/static/assets/icons/downvote.svg" title="downvote">
                 <button>Leave a Review</button>
             </div>
+            
         </div>
+        <div>
+        created by <b>${data.username}</b>
+        </div>
+
         
     </div>
     `

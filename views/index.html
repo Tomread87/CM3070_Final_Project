@@ -16,7 +16,6 @@
     <link rel="stylesheet" href="/static/styles/custom_icons.css" />
 
     <!-- Include geolocalization and other scripts -->
-    <script src="/static/scripts/geolocalization.js"></script>
     <script src="/static/scripts/home.js"></script>
 
 </head>
@@ -28,7 +27,7 @@
 
         <!-- Create a div to hold the map -->
         <div class="map-container" style="position: relative; ">
-            <div id="map" style="height: 500px;"></div>
+            <div id="map" style="height: 70vh;"></div>
             <div class="map-button-container">
                 <div id="close-open-map" class="submit-button" style="max-width: fit-content;">Close Map</div>
                 <div id="add-spot-map" class="submit-button" style="max-width: fit-content;">Add Spot on Map</div>
@@ -68,7 +67,7 @@
                     <span>or</span><button class="submit-button" id="find-my-location">Find Where I Am</button>
                 </div>
             </div>
-            
+
 
         </div>
 
@@ -155,12 +154,12 @@
     var addingSpot = false
     var currentLocation = null
 
+    // clears all ap layers
     function clearAllLayers() {
         findMeLayer.clearLayers()
         clickLayer.clearLayers()
         markersLayer.clearLayers()
     }
-
 
     // Add a tile layer
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -188,14 +187,10 @@
         // Get the name of the clsoest city
         fetchClosestCity(e.latlng.lat, e.latlng.lng).then(city => {
 
-            console.log("onLocFound", city);
-
             // Automatically zoom the map to the location
             marker.bindPopup("You should be within " + radius + " meters from this point.<br> The closest location is " + city[0].name).openPopup();
-
             map.setView(e.latlng, 15); // 13 is the zoom level, adjust as needed
 
-            console.log(e.latlng)
 
         });
 
@@ -292,9 +287,9 @@
     }
 
     // Function to add a marker on the map where the user clicks
-    function exploreMapOnClick(e) {
+    function manageMapCLick(e) {
 
-        if (!addingSpot) {
+        /*if (!addingSpot) {
             clearAllLayers()
 
             // Create a marker and popup
@@ -303,20 +298,20 @@
 
             clickLayer.addLayer(marker)
 
-            fetchClosestCity(e.latlng.lat, e.latlng.lng, 5).then(cities => {
+            fetchClosestCity(e.latlng.lat, e.latlng.lng, 30).then(cities => {
                 addCityMarkers(cities, e.latlng)
             });
-        } else {
+        } else */
+        if (addingSpot) {
             fetchClosestCity(e.latlng.lat, e.latlng.lng, 1).then(cities => {
                 const input = {
                     name: cities[0].name,
                     lat: e.latlng.lat,
                     lng: e.latlng.lng
                 }
-
                 createKnowledgePopup(input, true)
             });
-            
+
         }
 
 
@@ -342,31 +337,170 @@
                 lng: city.longitude
             }
 
-            // get entites for each city
-            getEntities(city.name, 10000)
-                .then(data => {
+            // get entites for each city if in map bound
+            if (isInMapBounds(cityLatLng)) { // show locations that are visible only on the map
+                getEntities(city.name, 10000)
+                    .then(data => {
 
-                    // create the html to be isnerted
-                    let htmlText = `<b>${city.name}</b><br>${data.entities.length} knowledge entites found`
+                        let ne = data.entities.length > 0 ? `<b>${data.entities.length}</b>` : 0
 
-                    // create the custom marker 
-                    const marker = L.marker(cityLatLng, {
-                        icon: customIcon(htmlText)
+                        // create the html to be isnerted
+                        let htmlText = `<b>${city.name}</b><br>${ne} knowledge entites found`
+
+                        // create the custom marker 
+                        const marker = L.marker(cityLatLng, {
+                            icon: customIcon(htmlText)
+                        })
+                        markersLayer.addLayer(marker)
+
                     })
-                    markersLayer.addLayer(marker)
-
-                    // Draw a line from the city to the center
-                    if (centerLatLng) {
-                        const line = L.polyline([cityLatLng, centerLatLng], {
-                            color: 'blue',
-                            weight: 2
-                        });
-                        markersLayer.addLayer(line);
-                    }
-                })
-
-
+            }
         })
+
+        setTimeout(addHoverEventListener,2000)
+    }
+
+    // adds state markers from an array of states
+    function addStateMarkers(array, centerLatLng = null, type) {
+
+        //custom icon
+        const customIcon = (htmlText) => {
+            return L.divIcon({
+                className: 'custom-icon', // Custom class for styling
+                html: `<div class="icon-label">${htmlText}</div>`, // HTML content for the icon
+                iconAnchor: [0, 10], // Anchor point of the icon to the marker
+            });
+        }
+
+
+        array.forEach(state => {
+
+            const stateLatLng = {
+                lat: state.latitude,
+                lng: state.longitude
+            }
+
+            // get entites for each state if in map bound
+            if (isInMapBounds(stateLatLng)) { // show locations that are visible only on the map
+
+                getStateEntities(state.isoCode, state.countryCode, 350)
+                    .then(data => {
+
+                        console.log(data);
+
+                        try {
+                            let ne = data.entities.length > 0 ? `<b>${data.entities.length}</b>` : 0
+
+                            // create the html to be isnerted
+                            let htmlText = `<b>${state.name}</b><br>${ne} knowledge entites found`
+
+                            // create the custom marker 
+                            const marker = L.marker(stateLatLng, {
+                                icon: customIcon(htmlText)
+                            })
+                            markersLayer.addLayer(marker)
+                        } catch (error) {
+                            console.error(error);
+                            console.log(data);
+                        }
+
+
+                    })
+            }
+        })
+
+        setTimeout(addHoverEventListener,2000)
+    }
+
+    // adds country markers from an array of countries
+    function addCountryMarkers(array, centerLatLng = null, type) {
+
+        //custom icon
+        const customIcon = (htmlText) => {
+            return L.divIcon({
+                className: 'custom-icon', // Custom class for styling
+                html: `<div class="icon-label">${htmlText}</div>`, // HTML content for the icon
+                iconAnchor: [0, 10], // Anchor point of the icon to the marker
+            });
+        }
+
+
+        array.forEach(country => {
+
+            const countryLatLng = {
+                lat: country.latitude,
+                lng: country.longitude
+            }
+
+            // get entites for each country if in map bound
+            if (isInMapBounds(countryLatLng)) { // show locations that are visible only on the map
+
+                getCountryEntities(country.isoCode, 350)
+                    .then(data => {
+
+
+                        try {
+                            let ne = data.entities.length > 0 ? `<b>${data.entities.length}</b>` : 0
+
+                            // create the html to be isnerted
+                            let htmlText = `<b>${country.name}</b><br>${ne} knowledge entites found`
+
+                            // create the custom marker 
+                            const marker = L.marker(countryLatLng, {
+                                icon: customIcon(htmlText)
+                            })
+                            markersLayer.addLayer(marker)
+                        } catch (error) {
+                            console.error(error);
+                            console.log(data);
+                        }
+
+
+                    })
+            }
+        })
+
+        setTimeout(addHoverEventListener,2000)
+    }
+
+    // add markers with location names and entities present
+    function populateMapEntities() {
+        var currentZoomLevel = map.getZoom();
+
+        console.log(currentZoomLevel);
+        var center = map.getCenter();
+
+        // Get distance from corner
+        var bounds = map.getBounds();
+
+        // Get corner points of the bounding box
+        var corner = bounds.getNorthEast();
+
+        // Calculate distance from center to corners
+        var distanceToCorner = haversineDistance(center.lat, center.lng, corner.lat, corner.lng);
+
+        clearAllLayers()
+        var marker = L.marker(center)
+        clickLayer.addLayer(marker)
+
+        // Get entities for locations        
+        if (currentZoomLevel >= 11) {
+            fetchClosestCity(center.lat, center.lng, 500)
+                .then(cities => {
+                    addCityMarkers(cities, center)
+                });
+        } else if (currentZoomLevel < 11 && currentZoomLevel > 7) {
+            fetchClosestStates(center.lat, center.lng, distanceToCorner, 100)
+                .then(states => {
+                    addStateMarkers(states, center)
+                });
+        } else {
+            fetchClosestCountries(center.lat, center.lng, distanceToCorner, 100)
+                .then(countries => {
+                    addCountryMarkers(countries, center)
+                });
+        }
+
     }
 
     function setMarker(latlng) {
@@ -375,22 +509,66 @@
         markersLayer.addLayer(marker)
     }
     // Listen for click event on the map
-    map.on('click', exploreMapOnClick);
+    map.on('click', manageMapCLick);
 
-    //map to check add the pointers on the map
-    /*map.on('zoomend', function() {
-        var currentZoomLevel = map.getZoom();
-        var center = map.getCenter();
+    // add local knowledg entities to map
+    map.on('zoomend', populateMapEntities);
+
+    map.on('moveend', populateMapEntities)
+
+    // check if coordinate is in bounds of visible map
+    function isInMapBounds(latlng, padding = 0.1) {
+        // Get the current visible map bounds
+        var bounds = map.getBounds();
+
+        // Add a little space outside the bounds
+        var paddingPercentage = padding;
+        var paddedBounds = bounds.pad(paddingPercentage);
+
+        // Create a LatLng object for your coordinate (e.g., {lat: 51.505, lng: -0.09})
+        var coordinate = L.latLng(latlng.lat, latlng.lng);
+
+        // Check if the coordinate is within the visible map bounds
+        if (paddedBounds.contains(coordinate)) {
+            return true
+        } else {
+            return false
+        }
+    }
+
+    // function to return the differnece dstances between lat and long given 
+    function haversineDistance(lat1, lon1, lat2, lon2) {
+        const toRad = x => (x * Math.PI) / 180;
+        const R = 6371; // Earth radius in km
+
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c;
+    }
 
 
-        clearAllLayers()
-        var marker = L.marker(center)
-        clickLayer.addLayer(marker)
+    // Function to add hover event listener to marker icons on map
+    function addHoverEventListener() {
+        const markers = document.querySelectorAll('.custom-icon');
 
-        fetchClosestCity(center.lat, center.lng, 5).then(cities => {
-            addCityMarkers(cities, center)
+        markers.forEach(marker => {
+            marker.addEventListener('mouseover', function() {
+                
+                marker.style.zIndex = '600'
+            });
+
+            marker.addEventListener('mouseout', function() {
+                
+                marker.style.zIndex = '200'
+            });
         });
-    });*/
+    }
 </script>
 
 <!-- Event Listeners -->
@@ -554,8 +732,8 @@
     })
 </script>
 
-<!-- Drag Map Code -->
-<script>
+<!-- Drag Map Old Code -->
+<!-- script>
     let isDragging = false;
     const dragElement = document.getElementById("drag-map");
     const mapElement = document.getElementById("map");
@@ -591,8 +769,52 @@
 
 
     });
-</script>
+</script -->
 
+<!-- Drag Map New Code To Include Touchscreens -->
+<script>
+    let isDragging = false;
+    let startY = 0; // Initialize startY for touch events
+    const dragElement = document.getElementById("drag-map");
+    const mapElement = document.getElementById("map");
+
+    dragElement.addEventListener("mousedown", startDrag);
+    dragElement.addEventListener("touchstart", startDrag);
+
+    function startDrag(e) {
+        e.preventDefault(); // Prevent default behavior for touch events
+        isDragging = true;
+        startY = e.clientY || e.touches[0].clientY; // Get the initial Y coordinate
+        
+        let startHeight = mapElement.offsetHeight;
+
+        function moveDrag(e) {
+            if (!isDragging) return;
+            let newY = e.clientY || e.touches[0].clientY; // Get the current Y coordinate
+            // Calculate the new height based on the drag
+            let newHeight = startHeight + (newY - startY);
+            // Ensure the new height is within the bounds of 100px and 80vh
+            const minHeight = 100; // Minimum height in pixels
+            const maxHeight = 0.8 * window.innerHeight; // Maximum height (80vh)
+            newHeight = Math.max(minHeight, Math.min(newHeight, maxHeight));
+            mapElement.style.height = `${newHeight}px`;
+        }
+
+        function stopDrag() {
+            isDragging = false;
+            document.removeEventListener("mousemove", moveDrag);
+            document.removeEventListener("touchmove", moveDrag);
+            document.removeEventListener("mouseup", stopDrag);
+            document.removeEventListener("touchend", stopDrag);
+            map.invalidateSize();
+        }
+
+        document.addEventListener("mousemove", moveDrag);
+        document.addEventListener("touchmove", moveDrag);
+        document.addEventListener("mouseup", stopDrag);
+        document.addEventListener("touchend", stopDrag);
+    }
+</script>
 <!-- Show All options if location exists or is selected -->
 <script>
     window.onload = async () => {

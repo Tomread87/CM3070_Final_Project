@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="/static/styles/styles.css" />
 
     <style>
-        .profile-image{
+        .profile-image {
             text-align: center;
             margin-top: 20px;
         }
@@ -32,7 +32,6 @@
                 <div class="profile-image">
                     <img src="https://th.bing.com/th/id/OIP.yhqkR9B2hKbtwwZ8bPNbQQHaHw?rs=1&pid=ImgDetMain" alt="" height="150" width="150">
                     <br>
-                    <b>Name Of User</b>
                 </div>
                 <div class="profile-inner-section">
                     <h3>Your Info</h3>
@@ -49,6 +48,10 @@
                             <td>email:</td>
                             <td><%= user.email %></td>
                         </tr>
+                        <tr>
+                            <td>joined:</td>
+                            <td><%= user.join_date.toLocaleString().split(',')[0] %></td>
+                        </tr>
                     </table>
                 </div>
                 <div class="profile-inner-section">
@@ -59,11 +62,54 @@
                         </tr>
                     </table>
                 </div>
+
+
+
                 <div class="profile-inner-section">
                     <h3>Your Activity</h3>
-                    <h4>Latest Enteties Created/Reviewed</h4>
-                    <h4>Latest Spots Created/Reviewed</h4>
-                    
+                    <style>
+                        .activities-container {
+                            display: flex;
+                            flex-wrap: wrap;
+                        }
+
+                        .activities-container>div {
+                            flex: 1;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                        }
+
+                        .activities-container>div>img{
+                            height: 8em;
+                            padding: 4px;
+                            border-radius: 50%;
+                            border: 3px solid grey;
+                        }
+                    </style>
+                    <div class="activities-container" style="display: flex;">
+                        <div>
+                            <h4>Knowledge Entities Created</h4>
+                            <img src="/static/assets/icons/entities-added.jpeg" alt="Entity Icon">
+                            <div><%= statistics.totalEntities %></div>
+                        </div>
+                        <div>
+                            <h4>Spots on Map Added</h4>
+                            <img src="/static/assets/icons/marker-map1.jpeg" alt="Map Spot Icon">
+                            <div><%= statistics.totalSpots %></div>
+                        </div>
+                        <div>
+                            <h4>Locations Explored</h4>
+                            <img src="/static/assets/icons/cityscape-town-svgrepo-com.svg" alt="Location Icon">
+                            <div><%= statistics.totalLocations %></div>
+                        </div>
+                        <div>
+                            <h4>Countries Explored</h4>
+                            <img src="/static/assets/icons/world-internet-svgrepo-com.svg" alt="World Icon">
+                            <div><%= statistics.totalCountries %></div>
+                        </div>
+                    </div>
+
                 </div>
 
 
@@ -78,4 +124,5 @@
 
     </div>
 </body>
+
 </html>

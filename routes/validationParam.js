@@ -81,16 +81,72 @@ const validateCreateEntity = [
             throw new Error('Longitude must be null or between -180 and 180.');
         }
         return true;
+    }),
+    body('locationLat').custom(value => {
+        if (value !== null && (value < -90 || value > 90)) {
+            throw new Error('Latitude must be null or between -90 and 90.');
+        }
+        return true;
+    }),
+    body('locationLng').custom(value => {
+        if (value !== null && (value < -180 || value > 180)) {
+            throw new Error('Longitude must be null or between -180 and 180.');
+        }
+        return true;
     })
 ];
 
-const validateGetEntites = [
+const validateGetEntities = [
     query('location')
-        .optional() // Makes this field optional
+        .exists() // Makes this field optional
         .custom((value) => {
             const cityFound = allWorldCities.some(city => city.name === value);
             if (!cityFound) {
                 throw new Error('Location must be a valid city from the list.');
+            }
+            return true;
+        }),
+    query('limit')
+        .exists()
+        .isInt({ min: 1 }) // Ensure it's an integer greater than 0
+        .withMessage('Limit must be a positive integer.'),
+    query('tags')
+        .optional()
+        .custom((value) => {
+            // If it's a string, it's okay
+            if (typeof value === 'string') return true;
+
+            // If it's an array, validate each element
+            if (Array.isArray(value)) {
+                value.forEach(tag => {
+                    if (typeof tag !== 'string') {
+                        throw new Error('Each tag must be a string.');
+                    }
+                });
+                return true;
+            }
+
+            // If tags is neither a string nor an array
+            throw new Error('Tags must be a string or an array of strings.');
+        })
+];
+
+const validateGetStateEntities = [
+    query('isoCode')
+        .exists() // Makes this field optional
+        .custom((value) => {
+            const cityFound = allWorldCities.some(city => city.stateCode === value);
+            if (!cityFound) {
+                throw new Error('stateCode must be a valid stateCode from the list.');
+            }
+            return true;
+        }),
+    query('countryCode')
+        .exists() // Makes this field optional
+        .custom((value) => {
+            const cityFound = allWorldCities.some(city => city.countryCode === value);
+            if (!cityFound) {
+                throw new Error('countryCode must be a valid city from the list.');
             }
             return true;
         }),
@@ -119,6 +175,78 @@ const validateGetEntites = [
         })
 ];
 
+const validateGetCountryEntities = [
+    query('countryCode')
+        .exists() // Makes this field optional
+        .custom((value) => {
+            const cityFound = allWorldCities.some(city => city.countryCode === value);
+            if (!cityFound) {
+                throw new Error('countryCode must be a valid city from the list.');
+            }
+            return true;
+        }),
+    query('limit')
+        .optional()
+        .isInt({ min: 1 }) // Ensure it's an integer greater than 0
+        .withMessage('Limit must be a positive integer.'),
+    query('tags')
+        .optional()
+        .custom((value) => {
+            // If it's a string, it's okay
+            if (typeof value === 'string') return true;
+
+            // If it's an array, validate each element
+            if (Array.isArray(value)) {
+                value.forEach(tag => {
+                    if (typeof tag !== 'string') {
+                        throw new Error('Each tag must be a string.');
+                    }
+                });
+                return true;
+            }
+
+            // If tags is neither a string nor an array
+            throw new Error('Tags must be a string or an array of strings.');
+        })
+];
+
+const validateUserEntities = [
+    query('userId')
+        .optional() // Makes this field optional
+        .custom((value) => {
+            const cityFound = allWorldCities.some(city => city.countryCode === value);
+            if (!cityFound) {
+                throw new Error('countryCode must be a valid city from the list.');
+            }
+            return true;
+        }),
+    query('limit')
+        .optional()
+        .isInt({ min: 1 }) // Ensure it's an integer greater than 0
+        .withMessage('Limit must be a positive integer.'),
+    query('tags')
+        .optional()
+        .custom((value) => {
+            // If it's a string, it's okay
+            if (typeof value === 'string') return true;
+
+            // If it's an array, validate each element
+            if (Array.isArray(value)) {
+                value.forEach(tag => {
+                    if (typeof tag !== 'string') {
+                        throw new Error('Each tag must be a string.');
+                    }
+                });
+                return true;
+            }
+
+            // If tags is neither a string nor an array
+            throw new Error('Tags must be a string or an array of strings.');
+        })
+];
+
+
+
 //validate post request to ser location
 const validateSetLocation = [
     body('name').isString().withMessage('Name must be a string'),
@@ -132,6 +260,9 @@ module.exports = {
     validateQueryISOCodeCities,
     validateQueryLonLatQty,
     validateCreateEntity,
-    validateGetEntites,
-    validateSetLocation
+    validateGetEntities,
+    validateSetLocation,
+    validateGetStateEntities,
+    validateGetCountryEntities,
+    validateUserEntities
 }

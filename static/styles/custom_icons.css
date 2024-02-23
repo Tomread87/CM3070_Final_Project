@@ -10,6 +10,6 @@
     z-index: 1;
 }
 
-.icon-label:hover {
-    z-index: 2000;
+.icon-label:hover + div {
+    z-index: 1000 !important;
 }

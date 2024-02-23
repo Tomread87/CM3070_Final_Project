@@ -20,24 +20,43 @@ function getAllCitiesOfCountry(isoCode) {
 
 // function to get all cities from the country-state-city library and cache it on the server
 function getAllCities() {
-    let allCities = [];
-    let timestamp1 = new Date()
-    const countries = Country.getAllCountries();
 
-    for (const country of countries) {
+    const allCountries = Country.getAllCountries();
+    const allStates = State.getAllStates();
+    const allCities = City.getAllCities();
+    
+    // Check for countries without states
+    for (const country of allCountries) {
         const states = State.getStatesOfCountry(country.isoCode);
-        for (const state of states) {
-            const cities = City.getCitiesOfState(country.isoCode, state.isoCode);
-            allCities = allCities.concat(cities);
+        if (states.length === 0) {
+            const newState = {
+                name: country.name,
+                countryCode: country.isoCode,
+                isoCode: country.isoCode,
+                latitude: country.latitude,
+                longitude: country.longitude,
+            };
+            allStates.push(newState);
         }
     }
-
-    let timestamp2 = new Date()
-    let timeDifference = (timestamp2 - timestamp1) / 1000; // Convert milliseconds to seconds
-
-
-    console.log("allCities loaded in " + timeDifference + " seconds");
-
+    
+    // Check for states without cities
+    for (const state of allStates) {
+        const cities = City.getCitiesOfState(state.countryCode, state.isoCode);
+        if (cities.length === 0) {
+            const newCity = {
+                name: state.name,
+                countryCode: state.countryCode,
+                stateCode: state.isoCode,
+                latitude: state.latitude,
+                longitude: state.longitude,
+                stateName: state.name,
+                countryName: Country.getCountryByCode(state.countryCode).name
+            };
+            allCities.push(newCity);
+        }
+    }
+    
     return allCities;
 }
 
@@ -59,10 +78,10 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 
 // function to return the closes city based on latitude and longitude
 function getClosestCity(allCities, latitude, longitude) {
-    let timestamp1 = new Date()
+
     let closestCity = null;
     let smallestDistance = Infinity;
-        
+
     allCities.forEach(city => {
         const distance = haversineDistance(latitude, longitude, city.latitude, city.longitude);
         if (distance < smallestDistance) {
@@ -71,17 +90,12 @@ function getClosestCity(allCities, latitude, longitude) {
         }
     });
 
-    let timestamp2 = new Date()
-    let timeDifference = (timestamp2 - timestamp1) / 1000; // Convert milliseconds to seconds
-
-    //console.log(closestCity, timeDifference)
-
-    return closestCity      
+    return closestCity
 }
 
 // function to return an array of cities that are the closest to a set latitude and longitude
 function getClosestCities(allCities, latitude, longitude, number = 1, radius = null) {
-    let timestamp1 = new Date();
+
     let cityDistances = [];
 
     allCities.forEach(city => {
@@ -95,14 +109,57 @@ function getClosestCities(allCities, latitude, longitude, number = 1, radius = n
     // Slice the array to get the specified number of closest cities
     let closestCities = cityDistances.slice(0, number).map(entry => entry.city);
 
-    // let timestamp2 = new Date();
-    // let timeDifference = (timestamp2 - timestamp1) / 1000; // Convert milliseconds to seconds
-
     return closestCities;
+}
+
+// get all states in a certain radius
+function getClosestStates(latitude, longitude, radius) {
+    const allStates = State.getAllStates();
+    let statesDistances = [];
+
+    // Calculate distances and create array of state-distance objects
+    allStates.forEach(state => {
+        const distance = haversineDistance(latitude, longitude, state.latitude, state.longitude);
+        if (distance <= radius) {
+            statesDistances.push({ state: state, distance: distance });
+        }
+    });
+
+    // Sort states by distance
+    statesDistances.sort((a, b) => a.distance - b.distance);
+
+    // Extract states from sorted array
+    let closestStates = statesDistances.map(entry => entry.state);
+
+    return closestStates;
+}
+
+// get all states in a certain radius
+function getClosestCountries(latitude, longitude, radius) {
+    const allCountries = Country.getAllCountries();
+    let countryDistances = [];
+
+    // Calculate distances and create array of state-distance objects
+    allCountries.forEach(country => {
+        const distance = haversineDistance(latitude, longitude, country.latitude, country.longitude);
+        if (distance <= radius + 200) {
+            countryDistances.push({ country: country, distance: distance });
+        }
+    });
+
+    // Sort states by distance
+    countryDistances.sort((a, b) => a.distance - b.distance);
+
+    // Extract states from sorted array
+    let closestCountries = countryDistances.map(entry => entry.country);
+
+    return closestCountries;
 }
 
 //cache all cities
 const allWorldCities = getAllCities()
+
+
 
 
 module.exports = {
@@ -110,5 +167,7 @@ module.exports = {
     getAllCountries,
     getAllCitiesOfCountry,
     getClosestCity,
-    getClosestCities
+    getClosestCities,
+    getClosestStates,
+    getClosestCountries
 }
