@@ -11,9 +11,50 @@
     <link rel="stylesheet" href="/static/styles/styles.css" />
 
     <style>
-        .profile-image {
+        .profile-image img {
+            height: 200px
+        }
+
+        .activities-container {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 40px;
+            gap: 10px;
+        }
+
+        .activities-container>div {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: solid 1px;
+            padding: 20px 10px; 
+            border-radius: 8px;
+        }
+
+        .activities-container>div>img {
+            height: 8em;
+            padding: 4px;
+            border-radius: 50%;
+            border: 3px solid grey;
+        }
+
+        .stat-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .stat-numbers {
+            font-size: 2em;
+            font-weight: bold;
             text-align: center;
             margin-top: 20px;
+        }
+
+        .user-info {
+            font-size: 1.3em;
         }
     </style>
 </head>
@@ -29,88 +70,75 @@
 
             <!-- BIO -->
             <section class="profile-section main-container">
-                <div class="profile-image">
-                    <img src="https://th.bing.com/th/id/OIP.yhqkR9B2hKbtwwZ8bPNbQQHaHw?rs=1&pid=ImgDetMain" alt="" height="150" width="150">
-                    <br>
-                </div>
-                <div class="profile-inner-section">
-                    <h3>Your Info</h3>
-                    <table>
-                        <tr>
-                            <td>Username:</td>
-                            <td><%= user.username %></td>
-                        </tr>
-                        <tr>
-                            <td>Location:</td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td>email:</td>
-                            <td><%= user.email %></td>
-                        </tr>
-                        <tr>
-                            <td>joined:</td>
-                            <td><%= user.join_date.toLocaleString().split(',')[0] %></td>
-                        </tr>
-                    </table>
-                </div>
-                <div class="profile-inner-section">
+
+                <section class="profile-inner-section" style="display: flex;">
+                    <div class="profile-image">
+                        <img src="https://th.bing.com/th/id/OIP.yhqkR9B2hKbtwwZ8bPNbQQHaHw?rs=1&pid=ImgDetMain" alt="">
+                    </div>
+                    <div class="user-info">
+
+                        <table>
+                            <tr>
+                                <td>Username:</td>
+                                <td><%= user.username %></td>
+                            </tr>
+                            <tr>
+                                <td>Exploring:</td>
+                                <td><%= user.location_name %></td>
+                            </tr>
+                            <tr>
+                                <td>email:</td>
+                                <td><%= user.email %></td>
+                            </tr>
+                            <tr>
+                                <td>joined:</td>
+                                <td><%= user.join_date.toLocaleString().split(',')[0] %></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                </section>
+
+
+                <section class="profile-inner-section">
                     <h3>Settings</h3>
                     <table>
                         <tr>
                             <td><button>Change Password</button></td>
                         </tr>
                     </table>
-                </div>
+                </section>
 
 
 
-                <div class="profile-inner-section">
-                    <h3>Your Activity</h3>
-                    <style>
-                        .activities-container {
-                            display: flex;
-                            flex-wrap: wrap;
-                        }
+                <br>
+                <br>
+                <section class="profile-inner-section">
 
-                        .activities-container>div {
-                            flex: 1;
-                            display: flex;
-                            flex-direction: column;
-                            align-items: center;
-                        }
-
-                        .activities-container>div>img{
-                            height: 8em;
-                            padding: 4px;
-                            border-radius: 50%;
-                            border: 3px solid grey;
-                        }
-                    </style>
-                    <div class="activities-container" style="display: flex;">
+                    <div id="stats-container" class="activities-container">
                         <div>
-                            <h4>Knowledge Entities Created</h4>
-                            <img src="/static/assets/icons/entities-added.jpeg" alt="Entity Icon">
-                            <div><%= statistics.totalEntities %></div>
+                            <div class="stat-title">Knowledge Created</div>
+                            <img src="/static/assets/icons/explorer-almanac4.jpeg" alt="Entity Icon">
+                            <div class="stat-numbers" data_value="<%= statistics.totalEntities %>" duration="<%= Math.min(5,statistics.totalEntities/9)%>">-</div>
                         </div>
                         <div>
-                            <h4>Spots on Map Added</h4>
-                            <img src="/static/assets/icons/marker-map1.jpeg" alt="Map Spot Icon">
-                            <div><%= statistics.totalSpots %></div>
+                            <div class="stat-title">Spots on Map Added</div>
+                            <img src="/static/assets/icons/explorer-pin3.jpeg" alt="Map Spot Icon">
+                            <div class="stat-numbers" data_value="<%= statistics.totalSpots %>" duration="<%= Math.min(5,statistics.totalEntities/9)%>">-</div>
                         </div>
                         <div>
-                            <h4>Locations Explored</h4>
-                            <img src="/static/assets/icons/cityscape-town-svgrepo-com.svg" alt="Location Icon">
-                            <div><%= statistics.totalLocations %></div>
+                            <div class="stat-title">Locations Explored</div>
+                            <img src="/static/assets/icons/explorer2.jpeg" alt="Location Icon">
+                            <div class="stat-numbers" data_value="<%= statistics.totalLocations %>" duration="<%= Math.min(5,statistics.totalEntities/9)%>">-</div>
                         </div>
                         <div>
-                            <h4>Countries Explored</h4>
-                            <img src="/static/assets/icons/world-internet-svgrepo-com.svg" alt="World Icon">
-                            <div><%= statistics.totalCountries %></div>
+                            <div class="stat-title">Countries Explored</div>
+                            <img src="/static/assets/icons/country-explorer1.jpeg" alt="World Icon">
+                            <div class="stat-numbers" data_value="<%= statistics.totalCountries %>" duration="<%= Math.min(5,statistics.totalEntities/9)%>">-</div>
                         </div>
                     </div>
 
-                </div>
+                </section>
 
 
 
@@ -124,5 +152,6 @@
 
     </div>
 </body>
+<script src="/static/scripts/number_animation.js"></script>
 
 </html>

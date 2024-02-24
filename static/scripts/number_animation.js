@@ -4,31 +4,29 @@ var animated = false
 
 function counter_animation(element) {
     let max = parseInt(element.getAttribute("data_value"));
-    let duration = parseInt(element.getAttribute("duration"))*1000;
+    let duration = parseInt(element.getAttribute("duration")) * 1000;
     let n = 0;
     add_value(n, max, element, duration, 20)
 }
 
-function add_value(n, max, element, duration, speed){
+function add_value(n, max, element, duration, speed) {
     if (n > max) {
         element.innerText = max;
-        return n}
+        return n
+    }
     else {
-        let sum = (max / duration) * speed      
-        setTimeout(()=> {
+        let sum = (max / duration) * speed
+        setTimeout(() => {
             element.innerText = Math.round(n);
-            add_value(n+sum, max, element, duration, speed)
+            add_value(n + sum, max, element, duration, speed)
         }, speed)
     }
 }
 
 // https://codepen.io/jr-cologne/pen/zdYdmx solution found here
 // get the element to animate
-var numbers_container = document.getElementById('numeri-container');
+var numbers_container = document.getElementById('stats-container');
 var elementHeight = numbers_container.clientHeight;
-
-// listen for scroll event and call animate function
-document.addEventListener('scroll', animateNumbers);
 
 // check if element is in view
 function inView(offset) {
@@ -57,9 +55,25 @@ function animateNumbers() {
         document.removeEventListener('scroll', animateNumbers);
 
         // element is in view start function
-        var numeri = numbers_container.getElementsByClassName("numeri")
-        for (let num of numeri) {
+        var numbers = numbers_container.getElementsByClassName("stat-numbers")
+        for (let num of numbers) {
             counter_animation(num)
         }
     }
   }
+
+/*setTimeout(() => {
+    
+    // element is in view start function
+    var numbers = numbers_container.getElementsByClassName("stat-numbers")
+    for (let num of numbers) {
+        counter_animation(num)
+    }
+}, 100)*/
+
+// listen for scroll event and call animate function
+if (!inView(300)) {
+    document.addEventListener('scroll', animateNumbers);
+} else {
+    animateNumbers()
+}
