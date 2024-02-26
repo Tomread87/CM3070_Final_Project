@@ -2,6 +2,8 @@ const { query, body, matchedData, validationResult } = require('express-validato
 const { hash_password, compare_hash_password, createUserToken, authenticateToken } = require('../serverside_scripts/authFuncs.js')
 const { getAllCountries, getAllCitiesOfCountry, getClosestCity, getClosestCities, getClosestStates, allWorldCities, getClosestCountries } = require('../serverside_scripts/cities.js');
 const validationParam = require("./validationParam.js")
+const badges = require('../serverside_scripts/badges.json')
+
 
 module.exports = function (app, db) {
 
@@ -158,9 +160,12 @@ module.exports = function (app, db) {
             totalCountries: uniqueCountryCodes.size,
             totalSpots: nonNullLatCount,
             totalLocations: uniqueLocations.size
-        }      
+        }
+        
+        // Check badge validity
 
-        return res.render("profile.html", { user, createdEntities, statistics })
+
+        return res.render("profile.html", { user, createdEntities, statistics, badges })
     })
 
     // --- Restful API ---//

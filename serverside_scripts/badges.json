@@ -1,0 +1,50 @@
+[
+  {
+    "badge_name": "Registered Explorer badge",
+    "required_entries": 0,
+    "description": "Congratulations on joining the community! You've taken the first step towards discovering and sharing the hidden treasures of your city. Start your journey today by adding your first entry and becoming an Initiate Explorer!",
+    "image": "explorer.jpg"
+  },
+  {
+    "badge_name": "Initiate Explorer badge",
+    "required_entries": 1,
+    "description": "Welcome to the contributors club! Awarded to the explorers who share their first piece of knowledge about their city, initiating their journey of enlightening others about the wonders of their locale.",
+    "image": "initiate.jpg"
+  },
+  {
+    "badge_name": "Trailblazer Explorer badge",
+    "required_entries": 10,
+    "description": "Lighting the way! Recognizing contributors who have shared ten insightful entries about their city, paving the path for others to learn and explore the richness of its culture and history.",
+    "image": "trailblazer.jpg"
+  },
+  {
+    "badge_name": "Expeditionary Virtuoso badge",
+    "required_entries": 20,
+    "description": "Master of discovery! Acknowledging seasoned contributors who have shared twenty informative entries about their city, showcasing their expertise and dedication to unravelling its unique stories and landmarks.",
+    "image": "virtuoso.jpg"
+  },
+  {
+    "badge_name": "Discovery Maestro badge",
+    "required_entries": 50,
+    "description": "Maestro of local lore! Celebrating contributors whose fifty entries have deepened our understanding of their city's heritage, enriching the collective knowledge base with fascinating insights and hidden gems.",
+    "image": "master.jpg"
+  },
+  {
+    "badge_name": "Frontier Conqueror badge",
+    "required_entries": 100,
+    "description": "Conqueror of curiosity! Reserved for dedicated contributors who have shared one hundred entries, bravely exploring the frontiers of their city's history, culture, and local landmarks, inspiring others to delve deeper into its wonders.",
+    "image": "frontier.jpg"
+  },
+  {
+    "badge_name": "Eminent Pathfinder badge",
+    "required_entries": 200,
+    "description": "Guiding light of discovery! Awarded to esteemed contributors who have shared two hundred entries, serving as pillars of knowledge within the community, guiding fellow explorers with their wealth of information about their city.",
+    "image": "pathfinder.jpg"
+  },
+  {
+    "badge_name": "Legendary Voyager badge",
+    "required_entries": 500,
+    "description": "Legendary guardian of city lore! Conferred upon the most dedicated contributors whose five hundred entries have woven an epic tapestry of their city's narrative, leaving an enduring legacy of shared knowledge for present and future generations.",
+    "image": "legendary.jpg"
+  }
+]

@@ -15,6 +15,11 @@
             height: 200px
         }
 
+        h2 {
+            font-size: 2em;
+            margin-top: 1.5em;
+        }
+
         .activities-container {
             display: flex;
             flex-wrap: wrap;
@@ -28,7 +33,7 @@
             flex-direction: column;
             align-items: center;
             border: solid 1px;
-            padding: 20px 10px; 
+            padding: 20px 10px;
             border-radius: 8px;
         }
 
@@ -56,6 +61,64 @@
         .user-info {
             font-size: 1.3em;
         }
+
+        .badge {
+
+            display: flex;
+            padding: 10px;
+            border: solid 1px black;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .badge-text {
+            margin-right: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+
+        .badge>img {
+            height: 140px;
+            margin-right: 10px;
+            align-self: center;
+        }
+
+        .badge .stat-title {
+            text-align: left;
+            margin-bottom: 12px;
+            
+        }
+
+        .progress-bar {
+            margin-bottom: 12px;
+            margin-top: 12px;
+            border: solid 1px gold;
+            border-radius: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bar-text {
+            padding: 4px 16px;
+            font-weight: bold;
+        }
+
+        .bar-filler {
+            width: 0;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            border-radius: 40px;
+            background-color: gold;
+            z-index: -1;
+            transition: width 1.5s ease-in-out;
+        }
+
+        .grayscale {
+            filter: grayscale(100%) opacity(0.8);
+        }
     </style>
 </head>
 
@@ -71,7 +134,7 @@
             <!-- BIO -->
             <section class="profile-section main-container">
 
-                <section class="profile-inner-section" style="display: flex;">
+                <section class="profile-inner-section" style="display: flex; flex-wrap: wrap;">
                     <div class="profile-image">
                         <img src="https://th.bing.com/th/id/OIP.yhqkR9B2hKbtwwZ8bPNbQQHaHw?rs=1&pid=ImgDetMain" alt="">
                     </div>
@@ -110,11 +173,9 @@
                 </section>
 
 
-
-                <br>
-                <br>
+                <!-- stats -->
                 <section class="profile-inner-section">
-
+                    <h2>Statistics</h2>
                     <div id="stats-container" class="activities-container">
                         <div>
                             <div class="stat-title">Knowledge Created</div>
@@ -141,6 +202,29 @@
                 </section>
 
 
+                <section class="profile-inner-section">
+                    <h2>Badges</h2>
+
+                    <div id="badges-container" class="badge-container">
+                        <div class="badge">
+                            <img class="" src="/static/assets/badges/<%= badges[0].image %>" alt="Entity Icon">
+                            <div class="badge-text">
+                                <div class="stat-title"><%= badges[0].badge_name %></div>
+                                <div><%= badges[0].description %></div>
+                                <div class="progress-bar">
+
+                                    <div class="bar-text">100% completed</div>
+                                    <div class="bar-filler" data-perc="100"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <%- include('./templates/badge.ejs')  %>
+                    </div>
+
+                </section>
+
+
 
 
             </section>
@@ -153,5 +237,47 @@
     </div>
 </body>
 <script src="/static/scripts/number_animation.js"></script>
+<script>
+    function animateProgressBars() {
+        
+        const badges = document.querySelectorAll('.badge');
+        badges.forEach(badge => {
+            
+            const barFiller = badge.querySelector('.bar-filler');
+            const perc = barFiller.getAttribute('data-perc');
+            const barText = badge.querySelector('.bar-text');
+
+            if (isElementInViewport(badge) || true) {
+                barFiller.style.width = perc + '%';
+                
+            }
+        });
+    }
+
+    function isElementInViewport(el, offset = 300) {
+        const rect = el.getBoundingClientRect();
+        // get window height
+        var windowHeight = window.innerHeight;
+        // get number of pixels that the document is scrolled
+        var scrollY = window.scrollY || window.pageYOffset;
+
+        // get current scroll position (distance from the top of the page to the bottom of the current viewport)
+        var scrollPosition = scrollY + windowHeight;
+        // get element position (distance from the top of the page to the bottom of the element)
+        var elementPosition = rect.top + scrollY + rect.clientHeight;;
+
+        // is scroll position greater than element position? (is element in view?)
+        if (scrollPosition > elementPosition - offset) {
+            return true;
+            console.log("in view");
+        }
+
+        return false;
+    }
+
+    animateProgressBars(); // Initial check when the page loads
+
+    window.addEventListener('scroll', animateProgressBars);
+</script>
 
 </html>

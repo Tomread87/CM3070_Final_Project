@@ -77,3 +77,6 @@ if (!inView(300)) {
 } else {
     animateNumbers()
 }
+
+
+

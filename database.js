@@ -30,14 +30,16 @@ async function getUser(email = null, username = null) {
 //function to retrieve all the relevant data of a user
 async function getUserData(id) {
     try {
-        const rows = await pool.execute(
-            `SELECT u.username, u.email, u.join_date, usl.location_name, usl.lat, usl.lng
+        const [userData] = await pool.execute(
+            `SELECT u.username, u.email, u.join_date, usl.location_name, usl.lat, usl.lng, COUNT(ke.entity_id) AS total_entries
             FROM users as u
             LEFT JOIN user_set_location as usl ON u.id = usl.user_id
-            WHERE u.id = ?;`,
+            LEFT JOIN knowledge_entities AS ke ON u.id = ke.submitted_by
+            WHERE u.id = ?
+            GROUP BY u.id;`,
             [id]
         );
-        return rows[0][0]
+        return userData[0];
     } catch (error) {
         console.error('Database error:', error);
         throw error;
@@ -346,11 +348,8 @@ async function getMostUsedTags() {
     }
 }
 
-
-
+// saves the chosen location of user to the database
 async function setUserLocation(data) {
-
-    console.log([data.id, data.name, data.lat, data.lng]);
 
     try {
         await pool.execute(
@@ -369,6 +368,20 @@ async function setUserLocation(data) {
     }
 }
 
+// update badge of user if they get to a certain number of entries
+async function updateUserBadge(userId, badge) {
+
+    try {
+        await pool.execute(
+            `update user set badge = ? where id = ?`,
+            [badge, userId]
+        );
+        return true
+    } catch (error) {
+        console.error('Database error:', error);
+        throw error;
+    }
+}
 
 
 
@@ -410,5 +423,6 @@ module.exports = {
     getUserCreatedEntities,
     getMostUsedTags,
     getUserData,
-    setUserLocation
+    setUserLocation,
+    updateUserBadge
 } 
