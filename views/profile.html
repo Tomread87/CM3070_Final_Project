@@ -10,7 +10,14 @@
     <!-- Load other CSS stylesheets -->
     <link rel="stylesheet" href="/static/styles/styles.css" />
 
+    <!-- Include other scripts -->
+    
+
     <style>
+        body {
+            color: #333;
+        }
+
         .profile-image img {
             height: 200px
         }
@@ -32,7 +39,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            border: solid 1px;
+            border: solid 1px var(--main-green);
             padding: 20px 10px;
             border-radius: 8px;
         }
@@ -41,7 +48,7 @@
             height: 8em;
             padding: 4px;
             border-radius: 50%;
-            border: 3px solid grey;
+            border: 3px solid var(--main-green);
         }
 
         .stat-title {
@@ -66,7 +73,7 @@
 
             display: flex;
             padding: 10px;
-            border: solid 1px black;
+            border: solid 1px var(--main-green);
             border-radius: 8px;
             margin-bottom: 12px;
         }
@@ -88,7 +95,7 @@
         .badge .stat-title {
             text-align: left;
             margin-bottom: 12px;
-            
+
         }
 
         .progress-bar {
@@ -113,13 +120,24 @@
             border-radius: 40px;
             background-color: gold;
             z-index: -1;
-            transition: width 1.5s ease-in-out;
+            transition: width 3s ease-in-out
         }
 
         .grayscale {
             filter: grayscale(100%) opacity(0.8);
         }
+
+        .entity-card {
+            margin: 0;
+        }
+
+        .recently-added {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
     </style>
+
 </head>
 
 <body>
@@ -134,6 +152,7 @@
             <!-- BIO -->
             <section class="profile-section main-container">
 
+                <!-- Profile  -->
                 <section class="profile-inner-section" style="display: flex; flex-wrap: wrap;">
                     <div class="profile-image">
                         <img src="https://th.bing.com/th/id/OIP.yhqkR9B2hKbtwwZ8bPNbQQHaHw?rs=1&pid=ImgDetMain" alt="">
@@ -161,17 +180,6 @@
                     </div>
 
                 </section>
-
-
-                <section class="profile-inner-section">
-                    <h3>Settings</h3>
-                    <table>
-                        <tr>
-                            <td><button>Change Password</button></td>
-                        </tr>
-                    </table>
-                </section>
-
 
                 <!-- stats -->
                 <section class="profile-inner-section">
@@ -201,7 +209,18 @@
 
                 </section>
 
+                <!-- Recent Knowledge Entities Created -->
+                <section class="profile-inner-section">
+                    <h2>Recent Knowledge Entities Created</h2>
+                    <div class="recently-added"></div>
+                    <div style="text-align: center; margin: 20px;">
+                        <button type="button" class="general-button" id="load-more">Load More</button>
+                    </div>
+                    
 
+                </section>
+
+                <!-- badges -->
                 <section class="profile-inner-section">
                     <h2>Badges</h2>
 
@@ -237,37 +256,40 @@
     </div>
 </body>
 <script src="/static/scripts/number_animation.js"></script>
+
+
+
+<!-- Progress Bar -->
 <script>
     function animateProgressBars() {
-        
+
         const badges = document.querySelectorAll('.badge');
+
         badges.forEach(badge => {
-            
+
             const barFiller = badge.querySelector('.bar-filler');
             const perc = barFiller.getAttribute('data-perc');
             const barText = badge.querySelector('.bar-text');
 
-            if (isElementInViewport(badge) || true) {
+            if (isElementInViewport(badge)) {
                 barFiller.style.width = perc + '%';
-                
+
             }
         });
     }
 
-    function isElementInViewport(el, offset = 300) {
+    function isElementInViewport(el, offset = 100) {
+
         const rect = el.getBoundingClientRect();
+
         // get window height
         var windowHeight = window.innerHeight;
+
         // get number of pixels that the document is scrolled
         var scrollY = window.scrollY || window.pageYOffset;
 
-        // get current scroll position (distance from the top of the page to the bottom of the current viewport)
-        var scrollPosition = scrollY + windowHeight;
-        // get element position (distance from the top of the page to the bottom of the element)
-        var elementPosition = rect.top + scrollY + rect.clientHeight;;
-
-        // is scroll position greater than element position? (is element in view?)
-        if (scrollPosition > elementPosition - offset) {
+        // is scroll position is in view?
+        if (scrollY > rect.y - windowHeight + offset) {
             return true;
             console.log("in view");
         }
@@ -275,9 +297,32 @@
         return false;
     }
 
-    animateProgressBars(); // Initial check when the page loads
+    animateProgressBars();
 
-    window.addEventListener('scroll', animateProgressBars);
+</script>
+
+<!-- Event Listeners -->
+<script>
+window.addEventListener('scroll', animateProgressBars);
+
+document.getElementById("load-more").addEventListener('click', (e)=> {
+    console.log(e);
+    counter += 4
+    fillCardsContainer({data: entities, start: counter - 4, end: counter, replace: false, containerQuerySelector: ".recently-added"})
+})
+
+</script>
+
+<!-- Entities -->
+<script src="/static/scripts/entitiesCards.js"></script>
+<script>
+    let data = `<%= createdEntities %>`
+    const entities = JSON.parse(data.replaceAll('&#34;','"').replaceAll("&#39;","'"))
+    
+    // Show the first for cards
+    let counter = 4
+    fillCardsContainer({data: entities, start: counter - 4, end: counter, replace: true, containerQuerySelector: ".recently-added"})
+
 </script>
 
 </html>

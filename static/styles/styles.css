@@ -294,6 +294,10 @@ input {
     flex-direction: column;
 }
 
+.entity-card-title {
+    font-size: 1.2em;
+}
+
 .entity-card > div:nth-child(2) {
     margin-top: 6px;
     border-top: solid 1px grey;
@@ -307,6 +311,15 @@ input {
 .entity-card ul {
     padding-left: 20px;
 
+}
+
+.created-by-container {
+    display: flex;
+    text-align: center;
+}
+
+.created-by-container img {
+    height: 26px
 }
 
 .entity-tag-selection {

@@ -1,8 +1,13 @@
-const { query, body, matchedData, validationResult } = require('express-validator');
+const { validationResult } = require('express-validator');
 const { hash_password, compare_hash_password, createUserToken, authenticateToken } = require('../serverside_scripts/authFuncs.js')
 const { getAllCountries, getAllCitiesOfCountry, getClosestCity, getClosestCities, getClosestStates, allWorldCities, getClosestCountries } = require('../serverside_scripts/cities.js');
 const validationParam = require("./validationParam.js")
 const badges = require('../serverside_scripts/badges.json')
+
+
+const multer = require('multer');
+const sharp = require('sharp');
+const fs = require('fs');
 
 
 module.exports = function (app, db) {
@@ -22,8 +27,6 @@ module.exports = function (app, db) {
             user.id = req.user.id
         }
 
-        
-        
         return res.render("index.html", { allCountries, user, mostUsedTags })
     })
 
@@ -139,7 +142,7 @@ module.exports = function (app, db) {
 
         user = await db.getUserData(user.id)
 
-        const createdEntities = await db.getUserCreatedEntities(user.id)
+        var createdEntities = await db.getUserCreatedEntities(user.id)
 
         
         // Get statistics
@@ -163,7 +166,7 @@ module.exports = function (app, db) {
         }
         
         // Check badge validity
-
+        createdEntities = JSON.stringify(createdEntities)
 
         return res.render("profile.html", { user, createdEntities, statistics, badges })
     })

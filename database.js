@@ -31,7 +31,7 @@ async function getUser(email = null, username = null) {
 async function getUserData(id) {
     try {
         const [userData] = await pool.execute(
-            `SELECT u.username, u.email, u.join_date, usl.location_name, usl.lat, usl.lng, COUNT(ke.entity_id) AS total_entries
+            `SELECT u.username, u.email, u.join_date, usl.location_name, usl.lat, usl.lng, COUNT(ke.entity_id), u.badge AS total_entries
             FROM users as u
             LEFT JOIN user_set_location as usl ON u.id = usl.user_id
             LEFT JOIN knowledge_entities AS ke ON u.id = ke.submitted_by
@@ -396,7 +396,8 @@ function createMainGetEntitiesQuery(whereClause) {
            GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_id) AS tags,
            u.username,
            u.email AS user_email,
-           u.join_date
+           u.join_date,
+           u.badge
     FROM knowledge_entities ke
     LEFT JOIN entity_emails em ON ke.entity_id = em.entity_id
     LEFT JOIN entity_phones ep ON ke.entity_id = ep.entity_id

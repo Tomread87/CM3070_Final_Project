@@ -16,7 +16,9 @@
     <link rel="stylesheet" href="/static/styles/custom_icons.css" />
 
     <!-- Include geolocalization and other scripts -->
+    <script src="/static/scripts/entitiesCards.js"></script>
     <script src="/static/scripts/home.js"></script>
+    
 
 </head>
 
@@ -357,7 +359,7 @@
             }
         })
 
-        setTimeout(addHoverEventListener,2000)
+        setTimeout(addHoverEventListener, 2000)
     }
 
     // adds state markers from an array of states
@@ -409,7 +411,7 @@
             }
         })
 
-        setTimeout(addHoverEventListener,2000)
+        setTimeout(addHoverEventListener, 2000)
     }
 
     // adds country markers from an array of countries
@@ -460,7 +462,7 @@
             }
         })
 
-        setTimeout(addHoverEventListener,2000)
+        setTimeout(addHoverEventListener, 2000)
     }
 
     // add markers with location names and entities present
@@ -511,6 +513,9 @@
     // Listen for click event on the map
     map.on('click', manageMapCLick);
 
+    // Listen for click event on the map
+    map.on('tap', manageMapCLick);
+
     // add local knowledg entities to map
     map.on('zoomend', populateMapEntities);
 
@@ -559,12 +564,12 @@
 
         markers.forEach(marker => {
             marker.addEventListener('mouseover', function() {
-                
+
                 marker.style.zIndex = '600'
             });
 
             marker.addEventListener('mouseout', function() {
-                
+
                 marker.style.zIndex = '200'
             });
         });
@@ -732,45 +737,6 @@
     })
 </script>
 
-<!-- Drag Map Old Code -->
-<!-- script>
-    let isDragging = false;
-    const dragElement = document.getElementById("drag-map");
-    const mapElement = document.getElementById("map");
-    const dragCircle = document.querySelector("#drag-map > div")
-
-
-    dragElement.addEventListener("mousedown", function(e) {
-        isDragging = true;
-        let startY = e.clientY;
-        let startHeight = mapElement.offsetHeight;
-
-        function onMouseMove(e) {
-            if (!isDragging) return;
-            let newY = e.clientY;
-            // Calculate the new height based on the drag
-            let newHeight = startHeight + (newY - startY);
-            // Ensure the new height is within the bounds of 100px and 80vh
-            const minHeight = 100; // Minimum height in pixels
-            const maxHeight = 0.8 * window.innerHeight; // Maximum height (80vh)
-            newHeight = Math.max(minHeight, Math.min(newHeight, maxHeight));
-            mapElement.style.height = `${newHeight}px`;
-        }
-
-        function onMouseUp() {
-            isDragging = false;
-            document.removeEventListener("mousemove", onMouseMove);
-            document.removeEventListener("mouseup", onMouseUp);
-            map.invalidateSize()
-        }
-
-        document.addEventListener("mousemove", onMouseMove);
-        document.addEventListener("mouseup", onMouseUp);
-
-
-    });
-</script -->
-
 <!-- Drag Map New Code To Include Touchscreens -->
 <script>
     let isDragging = false;
@@ -785,7 +751,7 @@
         e.preventDefault(); // Prevent default behavior for touch events
         isDragging = true;
         startY = e.clientY || e.touches[0].clientY; // Get the initial Y coordinate
-        
+
         let startHeight = mapElement.offsetHeight;
 
         function moveDrag(e) {
@@ -815,6 +781,7 @@
         document.addEventListener("touchend", stopDrag);
     }
 </script>
+
 <!-- Show All options if location exists or is selected -->
 <script>
     window.onload = async () => {
