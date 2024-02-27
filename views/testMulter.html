@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Form</title>
+</head>
+<body>
+    <h1>Upload Form</h1>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="image" accept="image/*" required>
+        <br>
+        <label for="jsonData">JSON Data:</label>
+        <textarea id="jsonData" name="jsonData" rows="4" cols="50" required></textarea>
+        <br>
+        <button type="submit">Upload</button>
+    </form>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const formData = new FormData();
+            formData.append("image", event.target.elements.image.files[0]);
+            formData.append("jsonData", event.target.elements.jsonData.value);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    alert('Upload successful.');
+                } else {
+                    alert('Upload failed.');
+                }
+            } catch (error) {
+                console.error('Error uploading:', error);
+                alert('Upload failed.');
+            }
+        });
+    </script>
+</body>
+</html>

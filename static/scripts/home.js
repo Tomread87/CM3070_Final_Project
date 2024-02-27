@@ -196,6 +196,8 @@ function createKnowledgePopup(input = currentLocation, includeCoord = false) {
                         </div>
 
                     </div>
+                    <h4>Images</h4>
+                    <input type="file" name="image" accept="image/*">
                     <h4>Review</h4>
                     <textarea name="entity-review" id="" cols="30" rows="10" maxlength="500" style="width: 350px" value=""></textarea>
                     

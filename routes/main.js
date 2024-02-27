@@ -3,16 +3,14 @@ const { hash_password, compare_hash_password, createUserToken, authenticateToken
 const { getAllCountries, getAllCitiesOfCountry, getClosestCity, getClosestCities, getClosestStates, allWorldCities, getClosestCountries } = require('../serverside_scripts/cities.js');
 const validationParam = require("./validationParam.js")
 const badges = require('../serverside_scripts/badges.json')
-
-
-const multer = require('multer');
-const sharp = require('sharp');
+const { saveSharpScaledImages, multerUpload } = require('../serverside_scripts/mediaUpload.js');
 const fs = require('fs');
+
 
 
 module.exports = function (app, db) {
 
-    
+
 
     // --- Home Page ---
     app.get("/", authenticateToken, async (req, res) => {
@@ -144,7 +142,7 @@ module.exports = function (app, db) {
 
         var createdEntities = await db.getUserCreatedEntities(user.id)
 
-        
+
         // Get statistics
         const uniqueCountryCodes = new Set();
         const uniqueLocations = new Set();
@@ -164,7 +162,7 @@ module.exports = function (app, db) {
             totalSpots: nonNullLatCount,
             totalLocations: uniqueLocations.size
         }
-        
+
         // Check badge validity
         createdEntities = JSON.stringify(createdEntities)
 
@@ -233,7 +231,7 @@ module.exports = function (app, db) {
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const { latitude, longitude, qty} = req.query;
+        const { latitude, longitude, qty } = req.query;
 
         // Convert string query parameters to numbers
         const lat = Number(latitude);
@@ -324,7 +322,7 @@ module.exports = function (app, db) {
 
             const entities = await db.getStateEntities(isoCode, countryCode, numericLimit, tagsArray);
 
-            return res.json({ entities: entities});
+            return res.json({ entities: entities });
         } catch (error) {
             console.error('Database error:', error);
             return res.status(500).send('Internal Server Error');
@@ -351,7 +349,7 @@ module.exports = function (app, db) {
 
             const entities = await db.getCountryEntities(countryCode, numericLimit, tagsArray);
 
-            return res.json({ entities: entities});
+            return res.json({ entities: entities });
         } catch (error) {
             console.error('Database error:', error);
             return res.status(500).send('Internal Server Error');
@@ -360,7 +358,7 @@ module.exports = function (app, db) {
     })
 
     app.get("/getuserentities", validationParam.validateUserEntities, authenticateToken, async (req, res) => {
-        
+
         // Check for validation errors
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -380,7 +378,7 @@ module.exports = function (app, db) {
 
             const entities = await db.getCountryEntities(countryCode, numericLimit, tagsArray);
 
-            return res.json({ entities: entities});
+            return res.json({ entities: entities });
         } catch (error) {
             console.error('Database error:', error);
             return res.status(500).send('Internal Server Error');
@@ -389,7 +387,7 @@ module.exports = function (app, db) {
     })
 
     // if user is logged in save their choice of location to the database
-    app.post("/set_location", validationParam.validateSetLocation, authenticateToken, async (req, res) =>{
+    app.post("/set_location", validationParam.validateSetLocation, authenticateToken, async (req, res) => {
 
         const user = req.user
         if (!user) return res.status(403).send({ error: "you need to login to create a new entity" })
@@ -405,11 +403,11 @@ module.exports = function (app, db) {
             return res.status(500).send(error)
         }
 
-        return res.send({"mex":"set location", "body":req.body, user})
+        return res.send({ "mex": "set location", "body": req.body, user })
     })
 
     // --- Create Entities ---//
-    app.post("/createentity", validationParam.validateCreateEntity, authenticateToken, async (req, res) => {
+    app.post("/createentity", multerUpload.single('image'), validationParam.validateCreateEntity, authenticateToken, async (req, res) => {
 
         const user = req.user
         if (!user) return res.status(403).send({ error: "you need to login to create a new entity" })
@@ -421,8 +419,10 @@ module.exports = function (app, db) {
         }
 
         // Access validated data
-        const data = { entityName, entityTag, phoneNumber, email, website, review, location,
-            locationLat, locationLng, lat, lng } = req.body;
+        const data = {
+            entityName, entityTag, phoneNumber, email, website, review, location,
+            locationLat, locationLng, lat, lng
+        } = req.body;
 
         // Get Country Code and State Code
         let city
@@ -447,6 +447,50 @@ module.exports = function (app, db) {
 
         return res.status(201).send({ body: req.body })
     })
+
+
+
+
+    app.get("/test", async (req, res) => {
+        res.render("testMulter.html")
+    })
+
+    // Define a route for uploading images and JSON data
+    app.post('/upload', multerUpload.single('image'), (req, res) => {
+        try {
+            // Check if file exists
+            if (!req.file) {
+                return res.status(400).send('No file uploaded.');
+            }
+
+            // Read uploaded image file
+            // const imageBuffer = fs.readFileSync(req.file.path);
+            // Access JSON data
+            
+            const jsonData = req.body.jsonData;
+            jsonData.test2 = "test2"
+            console.log(jsonData);
+            return res.status(200).send('Upload successful.');
+            try {
+                //const imageBuffer = fs.readFileSync(req.file.path);
+                
+                //console.log(imageBuffer);
+                saveSharpScaledImages(req.file)
+            } catch (error) {
+            console.log(error);   
+            }
+            
+
+            // Your logic to process the image and JSON data
+            // For example, save the image, process JSON data, etc.
+
+            // Respond with success message
+            res.status(200).send('Upload successful.');
+        } catch (err) {
+            console.error(err);
+            res.status(500).send('Error uploading.');
+        }
+    });
 
 }
 

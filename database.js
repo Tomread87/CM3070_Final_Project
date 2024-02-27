@@ -31,7 +31,7 @@ async function getUser(email = null, username = null) {
 async function getUserData(id) {
     try {
         const [userData] = await pool.execute(
-            `SELECT u.username, u.email, u.join_date, usl.location_name, usl.lat, usl.lng, COUNT(ke.entity_id), u.badge AS total_entries
+            `SELECT u.id, u.username, u.email, u.join_date, usl.location_name, usl.lat, usl.lng, COUNT(ke.entity_id), u.badge AS total_entries
             FROM users as u
             LEFT JOIN user_set_location as usl ON u.id = usl.user_id
             LEFT JOIN knowledge_entities AS ke ON u.id = ke.submitted_by
@@ -314,10 +314,10 @@ async function getUserCreatedEntities(userId, tags = [], limit = 50) {
 
 
         // join all querries
-        let whereClause = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+        whereClauses = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
         // Main query
-        query = createMainGetEntitiesQuery(whereClause)
+        query = createMainGetEntitiesQuery(whereClauses)
 
         // Add the limit to the parameters
         params.push(limit);

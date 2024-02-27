@@ -491,7 +491,7 @@
                 .then(cities => {
                     addCityMarkers(cities, center)
                 });
-        } else if (currentZoomLevel < 11 && currentZoomLevel > 7) {
+        } else if (currentZoomLevel < 11 && currentZoomLevel >= 7) {
             fetchClosestStates(center.lat, center.lng, distanceToCorner, 100)
                 .then(states => {
                     addStateMarkers(states, center)
