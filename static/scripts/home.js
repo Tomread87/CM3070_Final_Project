@@ -101,7 +101,6 @@ async function fetchClosestCountries(latitude, longitude, distance, quantity = 1
             throw new Error('Network response was not ok: ' + response.statusText);
         }
         const data = await response.json();
-        //console.log('Closest city:', data);
         return data; // Returns the fetched data
     } catch (error) {
         console.error('Error fetching the closest city:', error);
@@ -197,7 +196,7 @@ function createKnowledgePopup(input = currentLocation, includeCoord = false) {
 
                     </div>
                     <h4>Images</h4>
-                    <input type="file" name="image" accept="image/*">
+                    <input type="file" id="entity-image" name="image" accept="image/*">
                     <h4>Review</h4>
                     <textarea name="entity-review" id="" cols="30" rows="10" maxlength="500" style="width: 350px" value=""></textarea>
                     
@@ -299,8 +298,6 @@ async function submitNewEntityForm() {
         closeMessageModal()
         return document.querySelector("#contact-error-message").innerText = "At least one contact detail must be added, or coordinates must be present"
     }
-    
-    
 
     // create an object to send to server
     const data = {
@@ -317,26 +314,26 @@ async function submitNewEntityForm() {
         lng: entityLongitude
     };
 
-    console.log(data);
+    const formData = new FormData();
+    formData.append("image", document.getElementById('entity-image').files[0]);
+    formData.append("jsonData", JSON.stringify(data))
 
     // Use fetch API to send the data to the server
     fetch('/createentity', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data),
+        body: formData,
     })
         .then(response => {
             // close all previous message modals
             closeMessageModal()
             if (response.ok) response.json()
             else if (response.status == 403) throw new Error("You need to be registered and logged in to add local knowledge")
+            else if (response.status >= 500) throw new Error("Ops! Something went wrong, it's not your fault it's ours and we will try to fix it as soon as possible.")
         })
         .then(data => {
             console.log('Success:', data);
             //Will need to create popup message to show success
-            create_success_message("Knowledge Created", "New Knowledge Added Successfully","window.location.reload()")
+            create_success_message("Knowledge Created", "New Knowledge Added Successfully", "window.location.reload()")
             //window.location.reload()
         })
         .catch((error) => {
@@ -385,7 +382,7 @@ async function getStateEntities(isoCode, countryCode, limit, tags) {
 
     url.searchParams.append('isoCode', isoCode);
     url.searchParams.append('countryCode', countryCode);
-    
+
     if (limit) url.searchParams.append('limit', limit);
     if (tags && tags.length) {
         // Express automatically converts multiple query parameters with the same name into an array.
@@ -414,7 +411,7 @@ async function getCountryEntities(countryCode, limit, tags) {
     if (!countryCode) return console.error('Error:', error);
 
     url.searchParams.append('countryCode', countryCode);
-    
+
     if (limit) url.searchParams.append('limit', limit);
     if (tags && tags.length) {
         // Express automatically converts multiple query parameters with the same name into an array.

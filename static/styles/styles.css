@@ -232,6 +232,18 @@ input {
     display: flex;
     justify-content: space-between;
     margin-bottom: 20px;
+    
+}
+
+.entity-coordinates, .entity-website{
+    cursor: pointer;
+    text-decoration: none;
+    color: purple;
+}
+
+.entity-coordinates:hover, .entity-website:hover{
+    text-decoration: underline;
+    color: var(--main-green);
 }
 
 #create-entity > div > h2 {
@@ -281,8 +293,7 @@ input {
 }
 
 .entity-card {
-    flex: 0 0 calc(25% - 10px);
-    margin: 10px;
+    flex: 0 0 calc(50% - 10px);
     border: solid 1px var(--main-green);
     background-color: #fff;
     text-align: left;
@@ -292,36 +303,90 @@ input {
     display: flex;
     justify-content: space-between;
     flex-direction: column;
-    min-width: 290px;
-    max-width: calc(25%);
+    min-width: 340px;
+    transition: 0.15s ease-in-out;
+}
+
+.contact-info-title {
+    margin-top: 6px;
 }
 
 .entity-card-title {
-    font-size: 1.2em;
+    font-size: 1.5em;
 }
 
-.entity-card > div:nth-child(2) {
+.card-media-and-creator {
     margin-top: 6px;
     border-top: solid 1px grey;
-    padding-top: 6px
+    padding-top: 6px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
-.entity-card li {
-    width: fit-content;
+.media-container {
+    height: auto;
+    margin-top: 6px;
+}
+
+.media-container img {
+    height: 120px;
+    cursor: pointer;
+    border-radius: 8px;
+    box-shadow: 0 0 5px #3333;
+    transition: 0.15s ease-in-out;
+    
+}
+
+.media-container img:hover {
+    box-shadow: 0 0 10px #3338;
+}
+
+.entity-contact-info {
+    margin-top: 6px;
+    border-top: solid 1px grey;
+    padding-top: 6px;
+    width: 100%;
+    flex-wrap: wrap;
+}
+
+.entity-contact-info, .entity-contact-info * {
+    display: flex;
+    
+}
+
+.entity-contact-info > div {
+    margin-right: 8px;
+    padding: 2px 4px 2px 2px;
+}
+
+.entity-contact-info img{
+    height: 20px;
+    margin-right: 4px;
 }
 
 .entity-card ul {
-    padding-left: 20px;
+    padding-left: 0px;
 
 }
 
 .created-by-container {
     display: flex;
-    text-align: center;
+    align-items: center;
+    margin-top: 6px;
+    border-top: solid 1px grey;
+    padding-top: 6px;
+    justify-content: space-between;
+}
+
+.created-by-container * {
+    display: flex;
+    align-items: center;
 }
 
 .created-by-container img {
-    height: 26px
+    height: 22px
 }
 
 .entity-tag-selection {
@@ -350,9 +415,9 @@ input {
 
 .entity-cards-containers {
     display: flex;
-    font-size: 0.8em;
     flex-wrap: wrap;
     justify-content: center;
+    gap: 12px;
 }
 
 .selected {
@@ -436,3 +501,50 @@ input {
     color: red;
     margin-top: 6px;
 }
+
+    /* Styles for modal and overlay */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .modal-content {
+        max-width: 60vh;
+        max-height: 60vh;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 5px;
+        position: relative;
+    }
+    
+    .close-modal {
+        position: absolute;
+        bottom: -48px;
+        right: calc(50% - 20px);
+        cursor: pointer;
+        font-size: 2em;
+        color: #fff;
+        padding: 0px 11px;
+        border: solid 3px #fff;
+        border-radius: 40px;
+    }
+
+    .close-modal:hover {
+        background-color: #fff3;
+        transform: scale(1.05);
+    }
+    
+    .modal-image {
+        max-width: 100%;
+        max-height: 100%;
+        margin: auto;
+        object-fit: contain;
+    }

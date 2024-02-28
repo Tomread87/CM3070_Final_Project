@@ -4,8 +4,6 @@ const { getAllCountries, getAllCitiesOfCountry, getClosestCity, getClosestCities
 const validationParam = require("./validationParam.js")
 const badges = require('../serverside_scripts/badges.json')
 const { saveSharpScaledImages, multerUpload } = require('../serverside_scripts/mediaUpload.js');
-const fs = require('fs');
-
 
 
 module.exports = function (app, db) {
@@ -25,12 +23,12 @@ module.exports = function (app, db) {
             user.id = req.user.id
         }
 
-        return res.render("index.html", { allCountries, user, mostUsedTags })
+        return res.render("index.html", { allCountries, user, mostUsedTags, badges })
     })
 
     // --- Registration Page --- //
 
-    //opens the register user page
+    // opens the register user page
     app.get("/register", authenticateToken, (req, res) => {
 
         const user = req.user
@@ -38,7 +36,7 @@ module.exports = function (app, db) {
         return res.render("register.html", { user })
     })
 
-    //handles the request of a new user to register to the web application
+    // handles the request of a new user to register to the web application
     app.post("/register", validationParam.validateRegistration, async (req, res) => {
 
         // Check for validation errors
@@ -126,12 +124,12 @@ module.exports = function (app, db) {
 
     })
 
+    // logsout the user and clears the token cookie
     app.get("/logout", (req, res) => {
         res.clearCookie("geoKnowToken").status(200).redirect("/");
     })
 
     // --- Profile Page ---//
-
     app.get("/profile", authenticateToken, async (req, res) => {
 
         if (!req.user) return res.status(403).redirect("/login")
@@ -291,9 +289,9 @@ module.exports = function (app, db) {
             const numericLimit = parseInt(limit, 10) || 9; // Default to 9 if limit is not provided or invalid
 
             // Ensure tags is always an array even if only one tag is sent
-            let tagsArray = Array.isArray(tags) ? tags : (tags ? [tags] : []);
+            const tagsArray = Array.isArray(tags) ? tags : (tags ? [tags] : []);
 
-            const entities = await db.getEntities(location, numericLimit, tags);
+            const entities = await db.getEntities(location, numericLimit, tagsArray);
 
             return res.json({ entities: entities, location: location });
         } catch (error) {
@@ -413,17 +411,20 @@ module.exports = function (app, db) {
         if (!user) return res.status(403).send({ error: "you need to login to create a new entity" })
 
         // Check for validation errors
-        const errors = validationResult(req);
+        const errors = validationResult(req.body.jsonData);
         if (!errors.isEmpty()) {
+            console.log(errors);
             return res.status(400).json({ errors: errors.array() });
         }
 
         // Access validated data
+        const jsonData = JSON.parse(req.body.jsonData)
         const data = {
             entityName, entityTag, phoneNumber, email, website, review, location,
             locationLat, locationLng, lat, lng
-        } = req.body;
+        } = jsonData;
 
+        
         // Get Country Code and State Code
         let city
         if (!lat && !lng) {
@@ -436,61 +437,23 @@ module.exports = function (app, db) {
         data.userId = user.id
         data.countryCode = city.countryCode
         data.stateCode = city.stateCode
+        data.fileInfo = false
 
-        //find state and country from 
+        //save everything to databse
         try {
+            if (req.file) {
+                data.fileInfo = await saveSharpScaledImages(req.file)
+            }
+
             await db.addEntityToDatabase(data)
         } catch (error) {
             console.log('createentity', error);
             return res.status(500)
         }
 
-        return res.status(201).send({ body: req.body })
+
+        return res.status(201).send({ body: data})
     })
-
-
-
-
-    app.get("/test", async (req, res) => {
-        res.render("testMulter.html")
-    })
-
-    // Define a route for uploading images and JSON data
-    app.post('/upload', multerUpload.single('image'), (req, res) => {
-        try {
-            // Check if file exists
-            if (!req.file) {
-                return res.status(400).send('No file uploaded.');
-            }
-
-            // Read uploaded image file
-            // const imageBuffer = fs.readFileSync(req.file.path);
-            // Access JSON data
-            
-            const jsonData = req.body.jsonData;
-            jsonData.test2 = "test2"
-            console.log(jsonData);
-            return res.status(200).send('Upload successful.');
-            try {
-                //const imageBuffer = fs.readFileSync(req.file.path);
-                
-                //console.log(imageBuffer);
-                saveSharpScaledImages(req.file)
-            } catch (error) {
-            console.log(error);   
-            }
-            
-
-            // Your logic to process the image and JSON data
-            // For example, save the image, process JSON data, etc.
-
-            // Respond with success message
-            res.status(200).send('Upload successful.');
-        } catch (err) {
-            console.error(err);
-            res.status(500).send('Error uploading.');
-        }
-    });
 
 }
 

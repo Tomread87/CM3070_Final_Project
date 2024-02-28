@@ -116,6 +116,19 @@ async function addEntityToDatabase(data) {
             await connection.query('INSERT INTO entity_reviews (entity_id, review_text, submitted_by) VALUES (?, ?, ?)', [entityId, data.review, data.userId]);
         }
 
+
+        // add image to upladed images table and link to entity
+        if (data.fileInfo) {
+            const [imageResult] =
+            await connection.query('INSERT INTO uploaded_images (original_name, original_location, thumbnail_location, uploaded_by) VALUES (?, ?, ?, ?);', 
+            [data.fileInfo.originalName, data.fileInfo.original_location, data.fileInfo.thumbnail_location, data.userId]);
+
+            const imageId = imageResult.insertId;
+
+            await connection.query('INSERT INTO image_knowledge_link (image_id, entity_id) VALUES (?, ?);', 
+            [imageId, entityId]);
+        }
+
         // Commit transaction
         await connection.commit();
     } catch (error) {
@@ -384,7 +397,6 @@ async function updateUserBadge(userId, badge) {
 }
 
 
-
 // this is the main query to get all the entity information
 function createMainGetEntitiesQuery(whereClause) {
     return `
@@ -394,6 +406,9 @@ function createMainGetEntitiesQuery(whereClause) {
            GROUP_CONCAT(DISTINCT ew.website_url) AS websites, 
            GROUP_CONCAT(DISTINCT er.review_text) AS reviews,
            GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_id) AS tags,
+           GROUP_CONCAT(DISTINCT ui.original_name) AS original_names,
+           GROUP_CONCAT(DISTINCT ui.original_location) AS original_locations,
+           GROUP_CONCAT(DISTINCT ui.thumbnail_location) AS thumbnail_locations,
            u.username,
            u.email AS user_email,
            u.join_date,
@@ -406,6 +421,8 @@ function createMainGetEntitiesQuery(whereClause) {
     LEFT JOIN entity_knowledge_tags ekt ON ke.entity_id = ekt.entity_id
     LEFT JOIN tags t ON ekt.tag_id = t.tag_id
     LEFT JOIN users u ON ke.submitted_by = u.id
+    LEFT JOIN image_knowledge_link ikl ON ke.entity_id = ikl.entity_id
+    LEFT JOIN uploaded_images ui ON ikl.image_id = ui.id
     ${whereClause}
     GROUP BY ke.entity_id
     ORDER BY ke.entity_id DESC 
