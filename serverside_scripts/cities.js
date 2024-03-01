@@ -24,7 +24,7 @@ function getAllCities() {
     const allCountries = Country.getAllCountries();
     const allStates = State.getAllStates();
     const allCities = City.getAllCities();
-    
+
     // Check for countries without states
     for (const country of allCountries) {
         const states = State.getStatesOfCountry(country.isoCode);
@@ -39,7 +39,7 @@ function getAllCities() {
             allStates.push(newState);
         }
     }
-    
+
     // Check for states without cities
     for (const state of allStates) {
         const cities = City.getCitiesOfState(state.countryCode, state.isoCode);
@@ -56,7 +56,7 @@ function getAllCities() {
             allCities.push(newCity);
         }
     }
-    
+
     return allCities;
 }
 
@@ -156,6 +156,24 @@ function getClosestCountries(latitude, longitude, radius) {
     return closestCountries;
 }
 
+//search for city having country code and state code and name
+function searchCityByNameStateCountry(cityName, stateCode, countryCode) {
+    // Search for the city
+    const cities = City.getCitiesOfState(countryCode, stateCode)
+
+    // Filter the cities by state code and country code
+    const filteredCities = cities.filter(city =>
+        city.name === cityName
+    );
+
+    // If there are matching cities, you can access the first one
+    if (filteredCities.length > 0) {
+        return filteredCities[0];
+    } else {
+        return false
+    }
+}
+
 //cache all cities
 const allWorldCities = getAllCities()
 
@@ -169,5 +187,6 @@ module.exports = {
     getClosestCity,
     getClosestCities,
     getClosestStates,
-    getClosestCountries
+    getClosestCountries,
+    searchCityByNameStateCountry
 }

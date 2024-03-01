@@ -83,7 +83,7 @@ function create_success_message(title, message, action = null) {
         modal.innerHTML = `<div class="inner-message-modal">
                 <div style='display: flex; align-items: center; justify-content: center;'>
                     <img src='/static/assets/icons/ok_green.png' height='30' width='30'>
-                    <span style='margin-left: 6px; font-size: 1.5em; font-weight: 700; width: min-content'>${title}</span>
+                    <span style='margin-left: 6px; font-size: 1.5em; font-weight: 700; width: min-content; text-wrap: nowrap;'>${title}</span>
                 </div>
 
                 <br>

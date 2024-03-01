@@ -139,8 +139,10 @@
     var addingSpot = false
     var currentLocation = null
 
+
     // clears all ap layers
     function clearAllLayers() {
+
         findMeLayer.clearLayers()
         clickLayer.clearLayers()
         markersLayer.clearLayers()
@@ -371,8 +373,6 @@
                 getStateEntities(state.isoCode, state.countryCode, 350)
                     .then(data => {
 
-                        console.log(data);
-
                         try {
                             let ne = data.entities.length > 0 ? `<b>${data.entities.length}</b>` : 0
 
@@ -540,7 +540,6 @@
         return R * c;
     }
 
-
     // Function to add hover event listener to marker icons on map
     function addHoverEventListener() {
         const markers = document.querySelectorAll('.custom-icon');
@@ -658,6 +657,7 @@
 
         getEntities(location.name, 9, tags)
             .then(data => {
+
                 fillCardsContainer(data, '#search-tag-results')
                 // highlight the similar cards
                 document.querySelectorAll('#search-tag-results .entity-tag').forEach(entityTag => {
@@ -773,7 +773,7 @@
         if (location) {
             currentLocation = location
             showAllSections(location.name);
-            getEntities(location.name, 9).then(data => fillCardsContainer(data, '#recent-entities-container'))
+            getEntities(location.name, 9).then(data => {fillCardsContainer(data, '#recent-entities-container')})
             goToLocation(map, location.lat, location.lng, 15)
         }
     }

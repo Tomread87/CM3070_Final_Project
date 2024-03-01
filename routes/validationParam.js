@@ -107,6 +107,7 @@ const validateGetEntities = [
             return true;
         }),
     query('limit')
+        .optional()
         .exists()
         .isInt({ min: 1 }) // Ensure it's an integer greater than 0
         .withMessage('Limit must be a positive integer.'),
@@ -212,14 +213,8 @@ const validateGetCountryEntities = [
 
 const validateUserEntities = [
     query('userId')
-        .optional() // Makes this field optional
-        .custom((value) => {
-            const cityFound = allWorldCities.some(city => city.countryCode === value);
-            if (!cityFound) {
-                throw new Error('countryCode must be a valid city from the list.');
-            }
-            return true;
-        }),
+        .isInt({ min: 1 }) // Ensure it's an integer greater than 0
+        .withMessage('userId is required'),
     query('limit')
         .optional()
         .isInt({ min: 1 }) // Ensure it's an integer greater than 0
@@ -245,6 +240,18 @@ const validateUserEntities = [
         })
 ];
 
+const validateProfile = [
+    query('userId')
+    .optional()
+    .isInt({ min: 1 }) // Ensure it's an integer greater than 0
+    .withMessage('userId is required'),
+]
+
+const validateEntity = [
+    query('entityId')
+    .isInt({ min: 1 }) // Ensure it's an integer greater than 0
+    .withMessage('an entityId is required to view this page'),
+]
 
 
 //validate post request to ser location
@@ -264,5 +271,7 @@ module.exports = {
     validateSetLocation,
     validateGetStateEntities,
     validateGetCountryEntities,
-    validateUserEntities
+    validateUserEntities,
+    validateProfile,
+    validateEntity
 }

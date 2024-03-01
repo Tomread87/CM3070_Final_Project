@@ -2,15 +2,12 @@ const multer = require('multer');
 const sharp = require('sharp');
 const fs = require('fs');
 
-
-
-
-// Multer setup for handling file uploads
-const multerUpload = multer({
+const multerMultiUpload = multer({
     dest: 'static/temp_uploads/', // Temporary directory, files will be moved later
 });
 
-// sae a copy of the uploaded picture both original and thumbnail
+
+// save a copy of the uploaded picture both original and thumbnail
 async function saveSharpScaledImages(file) {
 
     const file_path = file.path;
@@ -34,6 +31,7 @@ async function saveSharpScaledImages(file) {
             .resize({ width: 360, height: 360, fit: 'cover' }) // Resize to 360x360 and crop
             .jpeg({ quality: 100, chromaSubsampling: '4:4:4' })
             .toFile(thFileName);
+        
     } catch (error) {
         console.log(error);
         throw (error)
@@ -60,7 +58,7 @@ function generateRandomString(length) {
 
 module.exports = {
     saveSharpScaledImages,
-    multerUpload
+    multerMultiUpload
 }
 
 

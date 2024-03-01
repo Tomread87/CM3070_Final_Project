@@ -10,22 +10,6 @@ function createCard(data) {
         tags += `<div class="entity-tag">${tag}</div>`
     })
 
-    console.log(data);
-    let images = []
-    if (data.original_locations != null) {
-        const originals = data.original_locations.split(",")
-        const thumbnails = data.thumbnail_locations.split(",")
-        // Ensure both arrays have the same length
-        if (originals.length === thumbnails.length) {
-            images = originals.map((original, index) => ({
-                original: original.trim(), // Trim to remove any leading/trailing spaces
-                thumbnail: thumbnails[index].trim() // Trim to remove any leading/trailing spaces
-            }));
-        }
-    }
-
-    console.log(data);
-
     const email = data.emails ? `<div><img src="/static/assets/icons/email.svg"> ${data.emails}</div>` : ""
     const phone = data.phone_numbers ? `<div><img src="/static/assets/icons/phone_in_talk.svg"> ${data.phone_numbers}</div>` : ""
     const website = data.websites ? `<div><img src="/static/assets/icons/internet.svg"> <a class="entity-website" ref="#" onClick="window.open('${data.websites}', '_blank')">${data.websites}</a></div>` : ""
@@ -35,13 +19,15 @@ function createCard(data) {
         </a>
     </div>` : ""
 
-    const review = data.reviews ? data.reviews : "No description at this moment"
+    const review = data.reviews.length > 0 ? data.reviews[0].review_text : "No description at this moment"
     let imagesView = ""
-    if (images[0].thumbnail != "") {
-        console.log(images);
+
+    console.log(data.images);
+
+    if (data.images) {
         imagesView += `<div class="media-container">`
-        images.forEach(image => {
-            imagesView += `<img src="${image.thumbnail}" data-original="${image.original}" onclick="openModal(this)">`
+        data.images.forEach(image => {
+            imagesView += `<img data-id="${image.id}" data-owner="${image.upladed_by}" src="${image.thumbnail_location}" data-original="${image.original_location}" onclick="openModal(this)">`
         })
         imagesView += `</div>`
     }
@@ -53,24 +39,24 @@ function createCard(data) {
             <div class="entity-card-location">${data.location}</div>
             <div class="entity-card-tags">${tags}</div>
             <div class="entity-contact-info">        
-                ${coordinates}
-                ${email}
-                ${phone}
                 ${website}
+                ${phone}
+                ${email}
+                ${coordinates}
             </div>
         </section>
         <section class="card-media-and-creator">
-            <div>                
+            <div class="entity-card-review">                
                 ${review}
             </div>
             ${imagesView}
            
             <div class="created-by-container">
-                <div>created by &#160;<b>${data.username}</b> <img src='/static/assets/badges/${data.badge}'></div>
+                <div>created by &#160;<b onclick="window.location.href='/profile?userId=${data.submitted_by}'">${data.username}</b> <img src='/static/assets/badges/${data.badge}'></div>
                 <div class="review-button-container">
                     <img src="/static/assets/icons/thumb_up.svg" title="upvote">
                     <img src="/static/assets/icons/thumb_down.svg" title="downvote">
-                    <button class="general-button">Discover More</button>
+                    <button class="general-button" onclick="window.location.href='/entity?entityId=${data.entity_id}'">Discover More</button>
                 </div>
             </div>
         </section>

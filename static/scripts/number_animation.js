@@ -4,7 +4,8 @@ var animated = false
 
 function counter_animation(element) {
     let max = parseInt(element.getAttribute("data_value"));
-    let duration = parseInt(element.getAttribute("duration")) * 1000;
+    let duration = Math.ceil(parseInt(element.getAttribute("duration") * 1000));
+    console.log(element,duration);
     let n = 0;
     add_value(n, max, element, duration, 20)
 }

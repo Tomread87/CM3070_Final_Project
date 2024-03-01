@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Entity - <%= entity.entity_name %></title>
+    <%- include('./templates/head.ejs')  %>
+
+
+    <!-- Include Leaflet CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <!-- Load other CSS stylesheets -->
+    <link rel="stylesheet" href="/static/styles/custom_icons.css" />
+
+    <!-- Include geolocalization and other scripts -->
+    <script src="/static/scripts/entitiesCards.js"></script>
+    <script src="/static/scripts/home.js"></script>
+
+    <style>
+        .entity-card {
+            border: none;
+        }
+
+        .review-badge {
+            height: 1.5em;
+        }
+
+        .entity-card-review {
+            max-width: 300px;
+            border: dotted 1px green;
+            min-width: 150px;
+            padding: 4px 6px;
+            border-radius: 8px;
+            margin-top: 4px;
+        }
+
+        .entity-card-review b {
+            cursor: pointer;
+        }
+
+        .review-by {
+            justify-content: end;
+            font-size: 0.8em;
+            display: flex;
+            align-items: center;
+        }
+
+        .media-container img {
+            height: 200px;
+        }
+
+        .media-container img:hover {
+            transform: translate(0, -2px);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="flex-container">
+        <!-- Header -->
+        <%- include('./templates/header.ejs')  %>
+
+        <!-- Create a div to hold the map -->
+        <div class="map-container" style="position: relative; ">
+            <div id="map" style="height: 40vh;"></div>
+            <div class="map-button-container">
+                <div id="close-open-map" class="submit-button" style="max-width: fit-content;">Close Map</div>
+                <div id="find-my-location" class="submit-button" style="max-width: fit-content;">Find Where I Am</div>
+            </div>
+            <div id="drag-map" style="cursor: ns-resize; background-color: #333; text-align: center;">
+                <div></div>
+            </div>
+        </div>
+
+        <!-- Entity Info -->
+        <div class="main-container">
+            <div class="entity-card">
+                <section class="entity-main-info">
+                    <div class="entity-card-title"><b><%= entity.entity_name %></b></div>
+                    <div class="entity-card-location"><%= entity.location %></div>
+                    <div class="entity-card-tags">
+                        <% entity.tags.split(",").forEach(tag => { %>
+                        <div class="entity-tag"><%= tag %></div>
+                        <% }); %>
+                    </div>
+                    <div class="entity-contact-info">
+                        <% if (entity.websites) { let websites = entity.websites.split(","); websites.forEach(website => { %>
+                        <div><img src="/static/assets/icons/internet.svg"><a class="entity-website" ref="#" onclick="window.open('<%= website %>', '_blank')"><%= website %></a></div>
+                        <% })} %>
+                        <% if (entity.phone_numbers) { let phone_numbers = entity.phone_numbers.split(","); phone_numbers.forEach(phone_number => { %>
+                        <div><img src="/static/assets/icons/phone_in_talk.svg"><%= phone_number %> </div>
+                        <% })} %>
+                        <% if (entity.emails) { let emails = entity.emails.split(","); emails.forEach(email => { %>
+                        <div><img src="/static/assets/icons/email.svg"><%= email %> </div>
+                        <% })} %>
+                        <% if (entity.lat && entity.lng) { %>
+                        <div><img src="/static/assets/icons/coordinates.svg">
+                            <a class="entity-coordinates" href="#map">
+                                (lat: <%= entity.lat %>, lng: <%= entity.lng %>)
+                            </a>
+                        </div>
+                        <% } %>
+                    </div>
+                </section>
+                <section class="card-media-and-creator">
+                    <b style="font-size: 1.2em;">What Users Said</b>
+                    <div class="entity-card-review">
+                        <% if (entity.reviews.length > 0) { let reviews = entity.reviews; reviews.forEach(review => { %>
+                        <div class="entityreview">
+                            <div class="review-text"><%= review.review_text %></div>
+                            <div class="review-by">
+                                written by &nbsp;<b onclick="window.location.href='/profile?userId=<%= review.submitted_by %>'"><%= review.username %></b><img class="review-badge" src="/static/assets/badges/<%= review.badge %>">
+                            </div>
+                        </div>
+                        <% })} else { %>
+                        <div class="entityreview">
+                            <div class="review-text">Nothing has been said about <%= entity.entity_name %></div>
+                            <div class="review-by"></div>
+                        </div>
+                        <% } %>
+                    </div>
+                    <br>
+                    <b style="font-size: 1.2em;">Media</b>
+                    <div class="media-container">
+                        <% if (entity.images && entity.images.length > 0) { entity.images.forEach(image => { %>
+                        <img data-id="<%= image.id %>" data-owner="<%= image.uploaded_by %>" src="<%= image.thumbnail_location %>" data-original="<%= image.original_location %>" onclick="openModal(this)">
+                        <% })} %>
+                    </div>
+
+                    <div class="created-by-container">
+                        <div>created by &nbsp;<b onclick="window.location.href='/profile?userId=37'"><%= entity.username %></b> <img src="/static/assets/badges/explorer.jpg"></div>
+                        <div class="review-button-container">
+                            <img src="/static/assets/icons/thumb_up.svg" title="upvote">
+                            <img src="/static/assets/icons/thumb_down.svg" title="downvote">
+                            <button class="general-button" onclick="window.location.href='/entity?entityId=25'">Discover More</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+        </div>
+        <!-- Footer -->
+        <%- include('./templates/footer.ejs')  %>
+
+    </div>
+</body>
+
+
+<!-- Leaflet map script -->
+<script>
+    // Initialize the map
+    var map = L.map('map', {
+        scrollWheelZoom: false
+    }).setView([0, 0], 2); // Default view, can be changed
+
+    //map layers
+    var findMeLayer = L.layerGroup().addTo(map);
+    var clickLayer = L.layerGroup().addTo(map);
+    var markersLayer = L.layerGroup().addTo(map);
+    var addingSpot = false
+    var currentLocation = null
+
+    // clears all ap layers
+    function clearAllLayers() {
+        findMeLayer.clearLayers()
+        clickLayer.clearLayers()
+        markersLayer.clearLayers()
+    }
+
+    // Add a tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(map);
+
+
+    // Function to handle geolocation error
+    function onLocationError(e) {
+        create_alert_message("Attention", e.message);
+    }
+
+
+    // Attempt to get the user's location, use promise to to get return value of current location
+    function locateUser() {
+        return new Promise((resolve, reject) => {
+            // Options for geolocation
+            var options = {
+                enableHighAccuracy: true,
+                maximumAge: 30000,
+                timeout: 15000
+            };
+
+            map.locate(options);
+
+            map.once('locationfound', e => resolve(e));
+            map.once('locationerror', e => reject(e));
+        });
+    }
+
+    function onLocationFound(e) {
+        var radius = e.accuracy / 2;
+
+        // remove previose markers and circle
+        clearAllLayers()
+
+        // Add a marker at the current location
+        var marker = L.marker(e.latlng)
+
+        // Add the new marker to the group
+        findMeLayer.addLayer(marker)
+
+        // Add a circle to represent the accuracy of the location
+        var circle = L.circle(e.latlng, radius)
+        findMeLayer.addLayer(circle)
+
+        // Get the name of the clsoest city
+        fetchClosestCity(e.latlng.lat, e.latlng.lng).then(city => {
+
+            // Automatically zoom the map to the location
+            marker.bindPopup("You should be within " + radius + " meters from this point.<br> The closest location is " + city[0].name).openPopup();
+            map.setView(e.latlng, 15); // 13 is the zoom level, adjust as needed
+
+
+        });
+
+    }
+
+    // Function go to location
+    function goToLocation(map, latitude, longitude, zoom) {
+        // Automatically zoom the map to the location
+
+        const latlng = {
+            lat: latitude,
+            lng: longitude
+        }
+        map.setView(latlng, zoom);
+    }
+
+    // Function to handle geolocation error
+    function onLocationError(e) {
+        create_alert_message("Attention", e.message);
+    }
+
+    // adds city markers from an array of cities
+    function addEntityMarker(entity) {
+
+        //custom icon
+        const customIcon = (entity) => {
+
+            const img = entity.images.length > 0 ? `<img src="${entity.images[0].thumbnail_location}">` : "";
+
+            return L.divIcon({
+                className: 'custom-icon', // Custom class for styling
+                html: `
+                <div>   
+                    <div class="icon-label entity-icon">
+                        <div style="display: flex;">
+                            ${img}
+                        </div>                
+                    </div>
+                    <div class="map-entity-name">
+                        ${entity.entity_name}
+                    </div>  
+                </div>
+                `, // HTML content for the icon
+                iconAnchor: [0, 10], // Anchor point of the icon to the marker
+            });
+        }
+
+        let latlng
+        
+        if (entity.lat && entity.lng) latlng = {lat:entity.lat, lng:entity.lng}
+        else latlng = { lat:entity.city.latitude, lng:entity.city.longitude }
+
+        
+        // create the custom marker 
+        const marker = L.marker(latlng, {
+            icon: customIcon(entity)
+        })
+
+        markersLayer.addLayer(marker)
+
+
+        addHoverEventListene()
+    }
+</script>
+
+<!-- Event Listeners -->
+<script>
+    // Bind even listener to find my location button to get gps coordinates of user
+    document.getElementById("find-my-location").addEventListener("click", () => {
+        locateUser().then(e => {
+
+            // show pin on map
+            onLocationFound(e)
+        }).catch(error => {
+            console.error('Location error:', error);
+        });
+    })
+
+    // Function to add hover event listener to marker icons on map
+    function addHoverEventListener() {
+        const markers = document.querySelectorAll('.custom-icon');
+
+        markers.forEach(marker => {
+            marker.addEventListener('mouseover', function() {
+
+                marker.style.zIndex = '600'
+            });
+
+            marker.addEventListener('mouseout', function() {
+
+                marker.style.zIndex = '200'
+            });
+        });
+    }
+</script>
+
+<!-- Drag Map New Code To Include Touchscreens -->
+<script>
+    let isDragging = false;
+    let startY = 0; // Initialize startY for touch events
+    const dragElement = document.getElementById("drag-map");
+    const mapElement = document.getElementById("map");
+
+    dragElement.addEventListener("mousedown", startDrag);
+    dragElement.addEventListener("touchstart", startDrag);
+
+    function startDrag(e) {
+        e.preventDefault(); // Prevent default behavior for touch events
+        isDragging = true;
+        startY = e.clientY || e.touches[0].clientY; // Get the initial Y coordinate
+
+        let startHeight = mapElement.offsetHeight;
+
+        function moveDrag(e) {
+            if (!isDragging) return;
+            let newY = e.clientY || e.touches[0].clientY; // Get the current Y coordinate
+            // Calculate the new height based on the drag
+            let newHeight = startHeight + (newY - startY);
+            // Ensure the new height is within the bounds of 100px and 80vh
+            const minHeight = 100; // Minimum height in pixels
+            const maxHeight = 0.8 * window.innerHeight; // Maximum height (80vh)
+            newHeight = Math.max(minHeight, Math.min(newHeight, maxHeight));
+            mapElement.style.height = `${newHeight}px`;
+        }
+
+        function stopDrag() {
+            isDragging = false;
+            document.removeEventListener("mousemove", moveDrag);
+            document.removeEventListener("touchmove", moveDrag);
+            document.removeEventListener("mouseup", stopDrag);
+            document.removeEventListener("touchend", stopDrag);
+            map.invalidateSize();
+        }
+
+        document.addEventListener("mousemove", moveDrag);
+        document.addEventListener("touchmove", moveDrag);
+        document.addEventListener("mouseup", stopDrag);
+        document.addEventListener("touchend", stopDrag);
+    }
+</script>
+
+<!-- Show All options if location exists or is selected -->
+<script>
+    var entity
+    getEntity('<%= entity.entity_id %>')
+        .then(data => {
+            entity = data;
+            console.log(entity);
+
+            const latlng = entity.lat && entity.lng ? {lat: entity.lat,lng: entity.lng} : {lat: entity.city.latitude,lng: entity.city.longitude} 
+
+            goToLocation(map, latlng.lat, latlng.lng, 14)
+            addEntityMarker(entity)
+
+        })
+</script>
+
+</html>

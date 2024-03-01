@@ -1,29 +1,3 @@
-
-// Function to fetch cities by country ISO code
-function fetchCitiesByIsoCode(isoCode) {
-    // Construct the URL with the ISO code query parameter
-    const url = new URL('/isocountrycities', window.location.origin);
-    url.searchParams.append('isocode', isoCode);
-
-    fetch(url)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok: ' + response.statusText);
-            }
-            return response.json();
-        })
-        .then(data => {
-            //cache data
-            cities = data.allCountryCities
-
-            //update the options in the city search
-            updateCitySuggestions(cities)
-        })
-        .catch(error => {
-            console.error('There has been a problem with your fetch operation:', error);
-        });
-}
-
 //function to populate native datalist with data, the data list works on chrome and firefox not edge -> look for solution in the future
 function updateCitySuggestions(cities) {
     const cityList = document.getElementById('city_suggestions');
@@ -44,68 +18,6 @@ function getCityCoordinates(cityName, cities) {
 
     // Return the found city object or null if not found
     return city || null;
-}
-
-// get the x number of closest city name based on latitude and longitude
-async function fetchClosestCity(latitude, longitude, quantity = 1) {
-    const url = new URL('/findlocationsfromCoord', window.location.origin);
-    url.searchParams.append('latitude', latitude);
-    url.searchParams.append('longitude', longitude);
-    url.searchParams.append('qty', quantity);
-
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error('Network response was not ok: ' + response.statusText);
-        }
-        const data = await response.json();
-        //console.log('Closest city:', data);
-        return data; // Returns the fetched data
-    } catch (error) {
-        console.error('Error fetching the closest city:', error);
-        throw error; // Rethrows the error to be handled where the function is called
-    }
-}
-
-// get the x number of closest city name based on latitude and longitude
-async function fetchClosestStates(latitude, longitude, distance) {
-    const url = new URL('/findstatesfromcoord', window.location.origin);
-    url.searchParams.append('latitude', latitude);
-    url.searchParams.append('longitude', longitude);
-    url.searchParams.append('qty', distance);
-
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error('Network response was not ok: ' + response.statusText);
-        }
-        const data = await response.json();
-        //console.log('Closest city:', data);
-        return data; // Returns the fetched data
-    } catch (error) {
-        console.error('Error fetching the closest city:', error);
-        throw error; // Rethrows the error to be handled where the function is called
-    }
-}
-
-// get the x number of closest city name based on latitude and longitude
-async function fetchClosestCountries(latitude, longitude, distance, quantity = 1) {
-    const url = new URL('/findcountriesfromcoord', window.location.origin);
-    url.searchParams.append('latitude', latitude);
-    url.searchParams.append('longitude', longitude);
-    url.searchParams.append('qty', distance);
-
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error('Network response was not ok: ' + response.statusText);
-        }
-        const data = await response.json();
-        return data; // Returns the fetched data
-    } catch (error) {
-        console.error('Error fetching the closest city:', error);
-        throw error; // Rethrows the error to be handled where the function is called
-    }
 }
 
 // Creates the popup window t add local knowledge
@@ -143,7 +55,7 @@ function createKnowledgePopup(input = currentLocation, includeCoord = false) {
 
     section.innerHTML =
         `<section class="add-knowledge-popup">
-            <div class="add-knowledge-inner-wrapper main-container">
+            <div class="add-knowledge-inner-wrapper">
                 
                 <form id="create-entity" action="/createentity" method="post">
                     <div>
@@ -196,7 +108,8 @@ function createKnowledgePopup(input = currentLocation, includeCoord = false) {
 
                     </div>
                     <h4>Images</h4>
-                    <input type="file" id="entity-image" name="image" accept="image/*">
+                    <div style="font-size: 0.8em; color: red">max 5 files</div>
+                    <input type="file" id="entity-image" name="image" accept="image/*" multiple>
                     <h4>Review</h4>
                     <textarea name="entity-review" id="" cols="30" rows="10" maxlength="500" style="width: 350px" value=""></textarea>
                     
@@ -271,7 +184,7 @@ function createKnowledgePopup(input = currentLocation, includeCoord = false) {
 async function submitNewEntityForm() {
 
     const entityName = document.getElementById('entity-name').value;
-    const entityTag = document.getElementById('entity-tag').value.split(',');
+    const entityTag = document.getElementById('entity-tag').value.split(',').map(tag => tag.trim());
     const phoneNumber = document.getElementById('contact-phone-number').value;
     const email = document.getElementById('contact-email').value;
     const website = document.getElementById('contact-website').value;
@@ -315,120 +228,44 @@ async function submitNewEntityForm() {
     };
 
     const formData = new FormData();
-    formData.append("image", document.getElementById('entity-image').files[0]);
+
+    // Get all selected files
+    const files = document.getElementById('entity-image').files;
+
+    console.log(files);
+    // Append each file to FormData
+    for (const file of files) {
+        formData.append("images", file);
+    }
+
+    // Append the jsonData
     formData.append("jsonData", JSON.stringify(data))
 
+    console.log(formData);
     // Use fetch API to send the data to the server
     fetch('/createentity', {
         method: 'POST',
         body: formData,
     })
-        .then(response => {
-            // close all previous message modals
-            closeMessageModal()
-            if (response.ok) response.json()
-            else if (response.status == 403) throw new Error("You need to be registered and logged in to add local knowledge")
-            else if (response.status >= 500) throw new Error("Ops! Something went wrong, it's not your fault it's ours and we will try to fix it as soon as possible.")
-        })
-        .then(data => {
-            console.log('Success:', data);
-            //Will need to create popup message to show success
-            create_success_message("Knowledge Created", "New Knowledge Added Successfully", "window.location.reload()")
-            //window.location.reload()
-        })
-        .catch((error) => {
-            console.error(error);
-            // Handle errors here, such as showing an error message to the user
-            create_alert_message("Attention", "Something went wrong:\n" + error)
-        });
-
-
-
-
-}
-
-// Fetch request to get entities
-async function getEntities(location, limit, tags) {
-
-    // Create the url depending on the parameters
-    const url = new URL('/getentities', window.location.origin);
-    if (location) url.searchParams.append('location', location);
-    if (limit) url.searchParams.append('limit', limit);
-    if (tags && tags.length) {
-        // Express automatically converts multiple query parameters with the same name into an array.
-        tags.forEach(tag => url.searchParams.append('tags', tag));
-    }
-
-
-    // Use fetch API to send the data to the server
-    const response = await fetch(url, {
-        method: 'GET',
-    }).catch((error) => {
-        console.error('Error:', error);
-        // Handle errors here
+    .then(response => {
+        // close all previous message modals
+        closeMessageModal()
+        if (response.ok) response.json()
+        else if (response.status == 403) throw new Error("You need to be registered and logged in to add local knowledge")
+        else if (response.status >= 500) throw new Error("Ops! Something went wrong, it's not your fault it's ours and we will try to fix it as soon as possible.")
+    })
+    .then(data => {
+        console.log('Success:', data);
+        //Will need to create popup message to show success
+        create_success_message("Knowledge Created", "New Knowledge Added Successfully", "window.location.reload()")
+        //window.location.reload()
+    })
+    .catch((error) => {
+        console.error(error);
+        // Handle errors here, such as showing an error message to the user
+        create_alert_message("Attention", "Something went wrong:\n" + error)
     });
 
-    const data = await response.json()
-
-    return data
-}
-
-// Fetch request to get entities
-async function getStateEntities(isoCode, countryCode, limit, tags) {
-
-    // Create the url depending on the parameters
-    const url = new URL('/getstateentities', window.location.origin);
-    if (!isoCode && !countryCode) return console.error('Error:', error);
-
-    url.searchParams.append('isoCode', isoCode);
-    url.searchParams.append('countryCode', countryCode);
-
-    if (limit) url.searchParams.append('limit', limit);
-    if (tags && tags.length) {
-        // Express automatically converts multiple query parameters with the same name into an array.
-        tags.forEach(tag => url.searchParams.append('tags', tag));
-    }
-
-
-    // Use fetch API to send the data to the server
-    const response = await fetch(url, {
-        method: 'GET',
-    }).catch((error) => {
-        console.error('Error:', error);
-        // Handle errors here
-    });
-
-    const data = await response.json()
-
-    return data
-}
-
-// Fetch request to get entities
-async function getCountryEntities(countryCode, limit, tags) {
-
-    // Create the url depending on the parameters
-    const url = new URL('/getcountryentities', window.location.origin);
-    if (!countryCode) return console.error('Error:', error);
-
-    url.searchParams.append('countryCode', countryCode);
-
-    if (limit) url.searchParams.append('limit', limit);
-    if (tags && tags.length) {
-        // Express automatically converts multiple query parameters with the same name into an array.
-        tags.forEach(tag => url.searchParams.append('tags', tag));
-    }
-
-
-    // Use fetch API to send the data to the server
-    const response = await fetch(url, {
-        method: 'GET',
-    }).catch((error) => {
-        console.error('Error:', error);
-    });
-
-    const data = await response.json()
-
-    return data
 }
 
 

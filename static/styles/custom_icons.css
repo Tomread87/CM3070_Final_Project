@@ -1,7 +1,7 @@
 .custom-icon .icon-label {
     color: #333; 
     background: rgba(255, 255, 255, 0.85); 
-    padding: 2px 5px; 
+    padding: 3; 
     border-radius: 3px; 
     font-size: 10px; 
     text-align: center; 
@@ -12,4 +12,14 @@
 
 .icon-label:hover + div {
     z-index: 1000 !important;
+}
+
+.icon-label.entity-icon > div > *{
+    height: 60px;
+    border-radius: 30px;
+    padding: 3px;
+}
+
+.icon-label.entity-icon {
+    border-radius: 10% 50% 50% !important;
 }

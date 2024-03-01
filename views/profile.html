@@ -11,15 +11,53 @@
     <link rel="stylesheet" href="/static/styles/styles.css" />
 
     <!-- Include other scripts -->
-    
+
 
     <style>
         body {
             color: #333;
         }
 
+        .profile-image {
+            height: 200px;
+            width: 200px;
+            box-sizing: border-box;
+            border-radius: 50%;
+            overflow: hidden;
+            border: solid 3px var(--main-green);
+            margin-right: 20px;
+        }
+
         .profile-image img {
-            height: 200px
+            height: 100%;
+            width: 100%;
+            object-fit: cover;
+            border: 3px #fff solid;
+            border-radius: 50%;
+            box-sizing: border-box;
+
+        }
+
+        .profile-inner-section {
+            position: relative;
+        }
+
+        #modify-image {
+            border: solid 3px var(--main-green);
+            height: 20px;
+            padding: 2px;
+            border-radius: 20px;
+            position: absolute;
+            background: #fff;
+            bottom: 0;
+            left: 150px;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+
+        #modify-image:hover {
+            scale: 1.1;
+            box-shadow: 0 0 5px #3333;
         }
 
         h2 {
@@ -67,6 +105,8 @@
 
         .user-info {
             font-size: 1.3em;
+            height: min-content;
+            align-self: end;
         }
 
         .badge {
@@ -133,7 +173,7 @@
 
         .recently-added {
             display: flex;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
         }
     </style>
@@ -153,28 +193,34 @@
             <section class="profile-section main-container">
 
                 <!-- Profile  -->
+                <h2>Profile</h2>
                 <section class="profile-inner-section" style="display: flex; flex-wrap: wrap;">
                     <div class="profile-image">
-                        <img src="https://th.bing.com/th/id/OIP.yhqkR9B2hKbtwwZ8bPNbQQHaHw?rs=1&pid=ImgDetMain" alt="">
+                        <img src="https://th.bing.com/th/id/R.167fd3ea07688ebc8654a87868c7b0d7?rik=brurs74b7bt0Nw&pid=ImgRaw&r=0" alt="">
+
                     </div>
+                    <% if (searchedUser == user) { %>
+                    <img id="modify-image" src="/static/assets/icons/edit.svg" alt="">
+                    <% } %>
+
                     <div class="user-info">
 
                         <table>
                             <tr>
                                 <td>Username:</td>
-                                <td><%= user.username %></td>
+                                <td><%= searchedUser.username %></td>
                             </tr>
                             <tr>
                                 <td>Exploring:</td>
-                                <td><%= user.location_name %></td>
+                                <td><%= searchedUser.location_name %></td>
                             </tr>
                             <tr>
                                 <td>email:</td>
-                                <td><%= user.email %></td>
+                                <td><%= searchedUser.email %></td>
                             </tr>
                             <tr>
                                 <td>joined:</td>
-                                <td><%= user.join_date.toLocaleString().split(',')[0] %></td>
+                                <td><%= searchedUser.join_date.toLocaleString().split(',')[0] %></td>
                             </tr>
                         </table>
                     </div>
@@ -182,46 +228,47 @@
                 </section>
 
                 <!-- stats -->
-                <section class="profile-inner-section">
+                <section class="">
                     <h2>Statistics</h2>
                     <div id="stats-container" class="activities-container">
+                        <% let param = 5; let maxTime = 4%>
                         <div>
                             <div class="stat-title">Knowledge Created</div>
                             <img src="/static/assets/icons/explorer-almanac4.jpeg" alt="Entity Icon">
-                            <div class="stat-numbers" data_value="<%= statistics.totalEntities %>" duration="<%= Math.min(5,statistics.totalEntities/9)%>">-</div>
+                            <div class="stat-numbers" data_value="<%= statistics.totalEntities %>" duration="<%= Math.max(Math.min(maxTime,statistics.totalEntities/param),0.5)%>">-</div>
                         </div>
                         <div>
                             <div class="stat-title">Spots on Map Added</div>
                             <img src="/static/assets/icons/explorer-pin3.jpeg" alt="Map Spot Icon">
-                            <div class="stat-numbers" data_value="<%= statistics.totalSpots %>" duration="<%= Math.min(5,statistics.totalEntities/9)%>">-</div>
+                            <div class="stat-numbers" data_value="<%= statistics.totalSpots %>" duration="<%= Math.max(Math.min(maxTime,statistics.totalSpots/param),0.5)%>">-</div>
                         </div>
                         <div>
                             <div class="stat-title">Locations Explored</div>
                             <img src="/static/assets/icons/explorer2.jpeg" alt="Location Icon">
-                            <div class="stat-numbers" data_value="<%= statistics.totalLocations %>" duration="<%= Math.min(5,statistics.totalEntities/9)%>">-</div>
+                            <div class="stat-numbers" data_value="<%= statistics.totalLocations %>" duration="<%= Math.max(Math.min(maxTime,statistics.totalLocations/param),0.5)%>">-</div>
                         </div>
                         <div>
                             <div class="stat-title">Countries Explored</div>
                             <img src="/static/assets/icons/country-explorer1.jpeg" alt="World Icon">
-                            <div class="stat-numbers" data_value="<%= statistics.totalCountries %>" duration="<%= Math.min(5,statistics.totalEntities/9)%>">-</div>
+                            <div class="stat-numbers" data_value="<%= statistics.totalCountries %>" duration="<%=Math.max( Math.min(maxTime,statistics.totalCountries/param),0.5)%>">-</div>
                         </div>
                     </div>
 
                 </section>
 
                 <!-- Recent Knowledge Entities Created -->
-                <section class="profile-inner-section">
+                <section class="">
                     <h2>Recent Knowledge Entities Created</h2>
                     <div class="recently-added"></div>
                     <div style="text-align: center; margin: 20px;">
                         <button type="button" class="general-button" id="load-more">Load More</button>
                     </div>
-                    
+
 
                 </section>
 
                 <!-- badges -->
-                <section class="profile-inner-section">
+                <section class="">
                     <h2>Badges</h2>
 
                     <div id="badges-container" class="badge-container">
@@ -298,31 +345,42 @@
     }
 
     animateProgressBars();
-
 </script>
 
 <!-- Event Listeners -->
 <script>
-window.addEventListener('scroll', animateProgressBars);
+    window.addEventListener('scroll', animateProgressBars);
 
-document.getElementById("load-more").addEventListener('click', (e)=> {
-    console.log(e);
-    counter += 4
-    fillCardsContainer({data: entities, start: counter - 4, end: counter, replace: false, containerQuerySelector: ".recently-added"})
-})
-
+    document.getElementById("load-more").addEventListener('click', (e) => {
+        counter += 4
+        fillCardsContainer({
+            data: entities,
+            start: counter - 4,
+            end: counter,
+            replace: false,
+            containerQuerySelector: ".recently-added"
+        })
+    })
 </script>
 
 <!-- Entities -->
 <script src="/static/scripts/entitiesCards.js"></script>
 <script>
-    let data = `<%= createdEntities %>`
-    const entities = JSON.parse(data.replaceAll('&#34;','"').replaceAll("&#39;","'"))
-    
-    // Show the first for cards
-    let counter = 4
-    fillCardsContainer({data: entities, start: counter - 4, end: counter, replace: true, containerQuerySelector: ".recently-added"})
+    var entities
+    var counter = 4
 
+    getUserEntities('<%= searchedUser.id %>').then(data => {
+        entities = data
+
+        // Show the first for cards
+        fillCardsContainer({
+            data: entities,
+            start: counter - 4,
+            end: counter,
+            replace: true,
+            containerQuerySelector: ".recently-added"
+        })
+    })
 </script>
 
 </html>

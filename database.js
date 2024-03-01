@@ -79,8 +79,9 @@ async function addEntityToDatabase(data) {
         const entityId = entityResult.insertId;
 
         // Process and insert tags
-        for (const tag of data.entityTag) {
+        for (let tag of data.entityTag) {
             let tagId;
+            tag = tag.trim()
 
             // Check if tag already exists
             const [existingTag] = await connection.query('SELECT tag_id FROM tags WHERE tag_name = ?', [tag]);
@@ -118,15 +119,17 @@ async function addEntityToDatabase(data) {
 
 
         // add image to upladed images table and link to entity
-        if (data.fileInfo) {
-            const [imageResult] =
-            await connection.query('INSERT INTO uploaded_images (original_name, original_location, thumbnail_location, uploaded_by) VALUES (?, ?, ?, ?);', 
-            [data.fileInfo.originalName, data.fileInfo.original_location, data.fileInfo.thumbnail_location, data.userId]);
+        if (data.dbImages && data.dbImages.length > 0) {
+            for (const image of data.dbImages) {
+                const [imageResult] =
+                    await connection.query('INSERT INTO uploaded_images (original_name, original_location, thumbnail_location, uploaded_by) VALUES (?, ?, ?, ?);',
+                        [image.originalName, image.original_location, image.thumbnail_location, data.userId]);
 
-            const imageId = imageResult.insertId;
+                const imageId = imageResult.insertId;
 
-            await connection.query('INSERT INTO image_knowledge_link (image_id, entity_id) VALUES (?, ?);', 
-            [imageId, entityId]);
+                await connection.query('INSERT INTO image_knowledge_link (image_id, entity_id) VALUES (?, ?);',
+                    [imageId, entityId]);
+            }
         }
 
         // Commit transaction
@@ -198,10 +201,10 @@ async function getStateEntities(isoCode, countryCode, limit = 9, tags = []) {
 
         // Create subquery for filtering entities based on tags
         // Future consideration sort the values by number of matching tags
-        
+
         let tagsSubquery = '';
         if (tags.length > 0) {
-             
+
             tagsSubquery = `
                 SELECT ekt.entity_id
                 FROM entity_knowledge_tags ekt
@@ -209,7 +212,7 @@ async function getStateEntities(isoCode, countryCode, limit = 9, tags = []) {
                 WHERE t.tag_name IN (?)
                 GROUP BY ekt.entity_id
             `;
-            
+
             params.push(tags);
         }
 
@@ -295,7 +298,7 @@ async function getCountryEntities(countryCode, limit = 9, tags = []) {
 }
 
 // get all teh entites created by a user and possibly filter it by the tags
-async function getUserCreatedEntities(userId, tags = [], limit = 50) {
+async function getUserCreatedEntities(userId, limit = 50, tags = []) {
     try {
         let query;
         let params = [];
@@ -336,6 +339,33 @@ async function getUserCreatedEntities(userId, tags = [], limit = 50) {
         params.push(limit);
 
         const [rows] = await pool.query(query, params);
+
+        return rows;
+    } catch (error) {
+        console.error('Database error:', error);
+        throw error;
+    }
+}
+
+async function getEntity(id) {
+    try {
+        let query;
+        let params = [];
+
+        // Construct the WHERE clause to filter the query
+        let whereClauses = 'where ke.entity_id = ?'
+
+        // Main query
+        query = createMainGetEntitiesQuery(whereClauses)
+
+        // Add the limit to the parameters
+        params.push(id);
+
+        //set limit
+        params.push(1)
+
+        const [rows] = await pool.query(query, params);
+
         return rows;
     } catch (error) {
         console.error('Database error:', error);
@@ -396,6 +426,73 @@ async function updateUserBadge(userId, badge) {
     }
 }
 
+//get all images of hte entites 
+async function getAllImagesFromEntities(entities_ids) {
+
+    try {
+
+        let query = `SELECT u.id, u.original_name, u.original_location, u.thumbnail_location, u.created_at, u.uploaded_by, ikl.entity_id
+        FROM uploaded_images u
+        JOIN image_knowledge_link ikl ON u.id = ikl.image_id
+        WHERE ikl.entity_id IN (?);`
+
+        const [images] = await pool.query(
+            query,
+            [entities_ids]
+        );
+
+
+        return images
+    } catch (error) {
+        console.error('Database error:', error);
+        throw error;
+    }
+}
+
+//get all images of hte entites 
+async function getReviewsFromEntities(entities_ids) {
+
+    try {
+
+        let query = `SELECT r.entity_id, r.review_id, r.review_text, r.submitted_by, u.username, u.image, u.badge, u.username FROM entity_reviews r 
+        join users u on r.submitted_by = u.id
+        WHERE r.entity_id IN (?);`
+
+        const [reviews] = await pool.query(
+            query,
+            [entities_ids]
+        );
+
+
+        return reviews
+    } catch (error) {
+        console.error('Database error:', error);
+        throw error;
+    }
+}
+
+//gets all reviews and images of entities
+async function attachAddInfoToEntities(entities) {
+    // Extracting entity_id values and joining them into a string
+    const entityIds = entities.map(entity => entity.entity_id)
+
+    try {
+        const images = await getAllImagesFromEntities(entityIds);
+        const reviews = await getReviewsFromEntities(entityIds)
+        // Add images to entities with the same entity_id
+        entities.forEach(entity => {
+            entity.images = images.filter(image => image.entity_id === entity.entity_id);
+            entity.reviews = reviews.filter(review => review.entity_id === entity.entity_id);
+        });
+
+
+        return entities;
+    } catch (error) {
+        console.error('Error fetching images:', error);
+        throw error; // Propagate the error
+    }
+}
+
 
 // this is the main query to get all the entity information
 function createMainGetEntitiesQuery(whereClause) {
@@ -404,11 +501,7 @@ function createMainGetEntitiesQuery(whereClause) {
            GROUP_CONCAT(DISTINCT em.email) AS emails, 
            GROUP_CONCAT(DISTINCT ep.phone_number) AS phone_numbers, 
            GROUP_CONCAT(DISTINCT ew.website_url) AS websites, 
-           GROUP_CONCAT(DISTINCT er.review_text) AS reviews,
            GROUP_CONCAT(DISTINCT t.tag_name ORDER BY t.tag_id) AS tags,
-           GROUP_CONCAT(DISTINCT ui.original_name) AS original_names,
-           GROUP_CONCAT(DISTINCT ui.original_location) AS original_locations,
-           GROUP_CONCAT(DISTINCT ui.thumbnail_location) AS thumbnail_locations,
            u.username,
            u.email AS user_email,
            u.join_date,
@@ -417,12 +510,9 @@ function createMainGetEntitiesQuery(whereClause) {
     LEFT JOIN entity_emails em ON ke.entity_id = em.entity_id
     LEFT JOIN entity_phones ep ON ke.entity_id = ep.entity_id
     LEFT JOIN entity_websites ew ON ke.entity_id = ew.entity_id
-    LEFT JOIN entity_reviews er ON ke.entity_id = er.entity_id
     LEFT JOIN entity_knowledge_tags ekt ON ke.entity_id = ekt.entity_id
     LEFT JOIN tags t ON ekt.tag_id = t.tag_id
     LEFT JOIN users u ON ke.submitted_by = u.id
-    LEFT JOIN image_knowledge_link ikl ON ke.entity_id = ikl.entity_id
-    LEFT JOIN uploaded_images ui ON ikl.image_id = ui.id
     ${whereClause}
     GROUP BY ke.entity_id
     ORDER BY ke.entity_id DESC 
@@ -430,11 +520,15 @@ function createMainGetEntitiesQuery(whereClause) {
 `
 }
 
+
+
+
 // Export all relevat functions
 module.exports = {
     getUser,
     createUser,
     addEntityToDatabase,
+    getEntity,
     getEntities,
     getStateEntities,
     getCountryEntities,
@@ -442,5 +536,8 @@ module.exports = {
     getMostUsedTags,
     getUserData,
     setUserLocation,
-    updateUserBadge
+    updateUserBadge,
+    getAllImagesFromEntities,
+    attachAddInfoToEntities,
+    getReviewsFromEntities
 } 

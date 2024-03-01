@@ -1,9 +1,9 @@
 const { validationResult } = require('express-validator');
 const { hash_password, compare_hash_password, createUserToken, authenticateToken } = require('../serverside_scripts/authFuncs.js')
-const { getAllCountries, getAllCitiesOfCountry, getClosestCity, getClosestCities, getClosestStates, allWorldCities, getClosestCountries } = require('../serverside_scripts/cities.js');
+const { getAllCountries, getAllCitiesOfCountry, getClosestCity, getClosestCities, getClosestStates, allWorldCities, getClosestCountries, searchCityByNameStateCountry } = require('../serverside_scripts/cities.js');
 const validationParam = require("./validationParam.js")
 const badges = require('../serverside_scripts/badges.json')
-const { saveSharpScaledImages, multerUpload } = require('../serverside_scripts/mediaUpload.js');
+const { saveSharpScaledImages, multerMultiUpload } = require('../serverside_scripts/mediaUpload.js');
 
 
 module.exports = function (app, db) {
@@ -20,7 +20,6 @@ module.exports = function (app, db) {
         //return res.send(req.user == undefined)
         if (req.user != undefined) {
             user = await db.getUserData(req.user.id)
-            user.id = req.user.id
         }
 
         return res.render("index.html", { allCountries, user, mostUsedTags, badges })
@@ -130,15 +129,31 @@ module.exports = function (app, db) {
     })
 
     // --- Profile Page ---//
-    app.get("/profile", authenticateToken, async (req, res) => {
+    app.get("/profile", authenticateToken, validationParam.validateProfile, async (req, res) => {
 
-        if (!req.user) return res.status(403).redirect("/login")
+        //if (!req.user) return res.status(403).redirect("/login")
+
+        // Check for validation errors
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            req.query.userId = undefined
+        }
 
         let user = req.user
+        let searchedUser = undefined
 
-        user = await db.getUserData(user.id)
+        if (user) user = await db.getUserData(user.id)
 
-        var createdEntities = await db.getUserCreatedEntities(user.id)
+
+        // if we have the query then we are looking at someone elses profile
+        if (req.query.userId) searchedUser = await db.getUserData(req.query.userId)
+        //if user is not logged in and input is incorrect redirect to home
+        if (!searchedUser && !user) return res.status('400').redirect('/')
+        //if there is no user with that id set searched user to the loged in user
+        if (!searchedUser) searchedUser = user
+
+        var createdEntities = await db.getUserCreatedEntities(searchedUser.id)
+        //createdEntities = await db.attachAddInfoToEntities(createdEntities)
 
 
         // Get statistics
@@ -154,6 +169,7 @@ module.exports = function (app, db) {
             }
         });
 
+
         const statistics = {
             totalEntities: createdEntities.length,
             totalCountries: uniqueCountryCodes.size,
@@ -161,10 +177,35 @@ module.exports = function (app, db) {
             totalLocations: uniqueLocations.size
         }
 
-        // Check badge validity
-        createdEntities = JSON.stringify(createdEntities)
+        return res.render("profile.html", { user, statistics, badges, searchedUser })
+    })
 
-        return res.render("profile.html", { user, createdEntities, statistics, badges })
+    // --- Entity Details Page ---//
+    app.get("/entity", authenticateToken, validationParam.validateEntity, async (req, res) => {
+
+        // Check for validation errors
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).redirect("/")
+        }
+
+        let user = undefined
+
+        //return res.send(req.user == undefined)
+        if (req.user != undefined) {
+            user = await db.getUserData(req.user.id)
+        }
+
+        // get entities
+        let entity = await db.getEntity(req.query.entityId)
+        if (entity.length > 0) {
+            entity = await db.attachAddInfoToEntities(entity)
+            entity[0].city = searchCityByNameStateCountry(entity[0].location, entity[0].stateCode, entity[0].countryCode)
+        }
+        else return res.status(404).send({ "error": "no entity with such entityId" })
+
+        return res.render("entity.html", { user, badges, entity: entity[0] })
     })
 
     // --- Restful API ---//
@@ -274,6 +315,33 @@ module.exports = function (app, db) {
         }
     });
 
+    app.get("/getentity", validationParam.validateEntity, async (req, res) => {
+
+        // Check for validation errors
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        //retrieve data from query
+        const { entityId } = req.query
+
+        try {
+
+            let entity = await db.getEntity(entityId);
+            if (entity.length > 0) {
+                entity = await db.attachAddInfoToEntities(entity)
+                entity[0].city = searchCityByNameStateCountry(entity[0].location, entity[0].stateCode, entity[0].countryCode)
+            } else return res.status(404).send({ error: 'no entity with this entityId' })
+
+            return res.json(entity[0]);
+        } catch (error) {
+            console.error('Database error:', error);
+            return res.status(500).send('Internal Server Error');
+        }
+
+    })
+
     app.get("/getentities", validationParam.validateGetEntities, async (req, res) => {
 
         // Check for validation errors
@@ -291,7 +359,12 @@ module.exports = function (app, db) {
             // Ensure tags is always an array even if only one tag is sent
             const tagsArray = Array.isArray(tags) ? tags : (tags ? [tags] : []);
 
-            const entities = await db.getEntities(location, numericLimit, tagsArray);
+            let entities = await db.getEntities(location, numericLimit, tagsArray);
+            if (entities.length > 0) {
+
+                entities = await db.attachAddInfoToEntities(entities)
+            }
+
 
             return res.json({ entities: entities, location: location });
         } catch (error) {
@@ -318,7 +391,8 @@ module.exports = function (app, db) {
             // Ensure tags is always an array even if only one tag is sent
             let tagsArray = Array.isArray(tags) ? tags : (tags ? [tags] : []);
 
-            const entities = await db.getStateEntities(isoCode, countryCode, numericLimit, tagsArray);
+            let entities = await db.getStateEntities(isoCode, countryCode, numericLimit, tagsArray);
+            entities = await db.attachAddInfoToEntities(entities)
 
             return res.json({ entities: entities });
         } catch (error) {
@@ -345,7 +419,8 @@ module.exports = function (app, db) {
             // Ensure tags is always an array even if only one tag is sent
             let tagsArray = Array.isArray(tags) ? tags : (tags ? [tags] : []);
 
-            const entities = await db.getCountryEntities(countryCode, numericLimit, tagsArray);
+            let entities = await db.getCountryEntities(countryCode, numericLimit, tagsArray);
+            entities = await db.attachAddInfoToEntities(entities)
 
             return res.json({ entities: entities });
         } catch (error) {
@@ -363,24 +438,39 @@ module.exports = function (app, db) {
             return res.status(400).json({ errors: errors.array() });
         }
 
-        return res.send(req.user)
-
         //retrieve data from query
-        const { countryCode, limit, tags } = req.query
+        const { userId, limit, tags } = req.query
 
         try {
-            const numericLimit = parseInt(limit, 10) || 9; // Default to 9 if limit is not provided or invalid
-
             // Ensure tags is always an array even if only one tag is sent
             let tagsArray = Array.isArray(tags) ? tags : (tags ? [tags] : []);
 
-            const entities = await db.getCountryEntities(countryCode, numericLimit, tagsArray);
+            let entities = await db.getUserCreatedEntities(userId, limit, tagsArray);
+            entities = await db.attachAddInfoToEntities(entities)
 
-            return res.json({ entities: entities });
+            return res.json(entities);
         } catch (error) {
             console.error('Database error:', error);
             return res.status(500).send('Internal Server Error');
         }
+
+    })
+
+    app.post("/deleteimage", authenticateToken, async (req, res) => {
+        const user = req.user
+        if (!user) return res.status(403).send({ error: "you need to login to delete images" })
+
+        // Check for validation errors
+        const errors = validationResult(req.body);
+        if (!errors.isEmpty()) {
+            console.log(errors);
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+
+    })
+
+    app.post("/changeprofileimage", validationParam.validateSetLocation, authenticateToken, async (req, res) => {
 
     })
 
@@ -405,18 +495,18 @@ module.exports = function (app, db) {
     })
 
     // --- Create Entities ---//
-    app.post("/createentity", multerUpload.single('image'), validationParam.validateCreateEntity, authenticateToken, async (req, res) => {
+    app.post("/createentity", multerMultiUpload.array('images', 5), validationParam.validateCreateEntity, authenticateToken, async (req, res) => {
 
         const user = req.user
         if (!user) return res.status(403).send({ error: "you need to login to create a new entity" })
 
-        // Check for validation errors
+        // Check for validation errors       
         const errors = validationResult(req.body.jsonData);
         if (!errors.isEmpty()) {
             console.log(errors);
             return res.status(400).json({ errors: errors.array() });
         }
-
+        
         // Access validated data
         const jsonData = JSON.parse(req.body.jsonData)
         const data = {
@@ -424,7 +514,6 @@ module.exports = function (app, db) {
             locationLat, locationLng, lat, lng
         } = jsonData;
 
-        
         // Get Country Code and State Code
         let city
         if (!lat && !lng) {
@@ -437,22 +526,33 @@ module.exports = function (app, db) {
         data.userId = user.id
         data.countryCode = city.countryCode
         data.stateCode = city.stateCode
-        data.fileInfo = false
+        data.dbImages = []
 
         //save everything to databse
-        try {
-            if (req.file) {
-                data.fileInfo = await saveSharpScaledImages(req.file)
-            }
+        try {          
+            // Access uploaded files
+            if (req.files && req.files.length > 0) {
 
-            await db.addEntityToDatabase(data)
+                for (let file of req.files) {
+                    const fileInfo = await saveSharpScaledImages(file)
+                    data.dbImages.push(fileInfo)
+                }
+                
+                await db.addEntityToDatabase(data)
+            } else {
+                await db.addEntityToDatabase(data)
+            }
         } catch (error) {
             console.log('createentity', error);
-            return res.status(500)
+            if (error.code === 'LIMIT_FILE_SIZE') {
+                res.status(400).json({ error: 'File size exceeds the limit of 10MB' });
+            } else {
+                return res.status(500).json({ error: 'Internal server error' });
+            }
         }
 
 
-        return res.status(201).send({ body: data})
+        return res.status(201).send({ body: data })
     })
 
 }
