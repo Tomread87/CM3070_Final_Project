@@ -19,13 +19,17 @@
         }
 
         .profile-image {
-            height: 200px;
-            width: 200px;
-            box-sizing: border-box;
             border-radius: 50%;
             overflow: hidden;
             border: solid 3px var(--main-green);
             margin-right: 20px;
+            padding: 6px;
+            background: #333;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            height: 150px;
+            width: 150px;
         }
 
         .profile-image img {
@@ -35,7 +39,7 @@
             border: 3px #fff solid;
             border-radius: 50%;
             box-sizing: border-box;
-
+            cursor: pointer;
         }
 
         .profile-inner-section {
@@ -49,8 +53,8 @@
             border-radius: 20px;
             position: absolute;
             background: #fff;
-            bottom: 0;
-            left: 150px;
+            top: 120px;
+            left: 130px;
             cursor: pointer;
             transition: 0.15s;
         }
@@ -176,6 +180,39 @@
             gap: 10px;
             flex-wrap: wrap;
         }
+
+        .initials {
+            color: #fff;
+            height: 100%;
+            display: flex;
+            width: 100%;
+            align-items: center;
+            justify-content: center;
+            font-size: 5em;
+            font-weight: 700;
+            border: solid #fff;
+            border-radius: 100px;
+        }
+
+        @media screen and (max-width: 375px) {
+            .activities-container {
+                font-size: 0.8em;
+            }
+
+            .activities-container>div>img {
+                height: 6em
+            }
+
+            .badge {
+                flex-direction: column;
+                text-align: center;
+                font-size: 0.9em;
+            }
+
+            .badge .stat-title {
+                text-align: center;
+            }
+        }
     </style>
 
 </head>
@@ -195,10 +232,18 @@
                 <!-- Profile  -->
                 <h2>Profile</h2>
                 <section class="profile-inner-section" style="display: flex; flex-wrap: wrap;">
+                    <% if (searchedUser.thumbnail_location) { %>
                     <div class="profile-image">
-                        <img src="https://th.bing.com/th/id/R.167fd3ea07688ebc8654a87868c7b0d7?rik=brurs74b7bt0Nw&pid=ImgRaw&r=0" alt="">
-
+                        <img data-original="<%= searchedUser.original_location %>" onclick="openModal(this)" src="<%= searchedUser.thumbnail_location %>" alt="">
                     </div>
+                    <% } else { %>
+                    <div class="profile-image">
+                        <div class="initials">
+                            <% let usrnm = searchedUser.username %>
+                            <%=(usrnm.charAt(0).toUpperCase() + usrnm.charAt(parseInt(usrnm.length/2)-1).toUpperCase()).trim()%>
+                        </div>
+                    </div>
+                    <% } %>
                     <% if (searchedUser == user) { %>
                     <img id="modify-image" src="/static/assets/icons/edit.svg" alt="">
                     <% } %>
@@ -360,6 +405,15 @@
             replace: false,
             containerQuerySelector: ".recently-added"
         })
+
+        if (counter > entities.length) {
+            e.target.parentNode.innerHTML = "All Knowledge Entities Already Loaded"
+        }
+    })
+
+    const changeImageButton = document.getElementById("modify-image")
+    if (changeImageButton) changeImageButton.addEventListener("click", () => {
+        createSingleImageUploadForm()
     })
 </script>
 

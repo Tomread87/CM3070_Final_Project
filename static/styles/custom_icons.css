@@ -1,13 +1,23 @@
 .custom-icon .icon-label {
     color: #333; 
     background: rgba(255, 255, 255, 0.85); 
-    padding: 3; 
-    border-radius: 3px; 
+    padding: 1px 8px; 
+    border-radius: 0 50px 50px; 
     font-size: 10px; 
     text-align: center; 
     white-space: nowrap; 
     display: inline-block;
     z-index: 1;
+    border: solid 2px var(--main-green);
+    
+}
+
+.custom-icon .icon-label {
+    box-shadow: 4px 4px 5px #3337;
+}
+
+.map-entity-name, .icon-label.entity-icon  {
+    box-shadow: 4px 4px 5px #333b;
 }
 
 .icon-label:hover + div {
@@ -21,5 +31,24 @@
 }
 
 .icon-label.entity-icon {
-    border-radius: 10% 50% 50% !important;
+    border-radius: 5% 50% 50% !important;
+    border-width: 2px;
+}
+
+.map-entity-name {    
+    background: #fff;
+    width: 70px;
+    font-size: 1em;
+    padding: 2px;
+    text-align: center;
+    border-radius: 4px;
+    margin-top: 4px;
+    border: solid 2px var(--main-green);
+    font-family: "Roboto Condensed";
+
+}
+
+.icon-label.entity-icon {
+    padding: 0;
+
 }

@@ -1,10 +1,9 @@
 const { validationResult } = require('express-validator');
-const { hash_password, compare_hash_password, createUserToken, authenticateToken } = require('../serverside_scripts/authFuncs.js')
+const { hash_password, compare_hash_password, createUserToken, authenticateToken, requiredAuthenticatedToken } = require('../serverside_scripts/authFuncs.js')
 const { getAllCountries, getAllCitiesOfCountry, getClosestCity, getClosestCities, getClosestStates, allWorldCities, getClosestCountries, searchCityByNameStateCountry } = require('../serverside_scripts/cities.js');
 const validationParam = require("./validationParam.js")
 const badges = require('../serverside_scripts/badges.json')
-const { saveSharpScaledImages, multerMultiUpload } = require('../serverside_scripts/mediaUpload.js');
-
+const { saveSharpScaledImages, multerUpload, deleteFile, deleteTempFile } = require('../serverside_scripts/mediaUpload.js');
 
 module.exports = function (app, db) {
 
@@ -232,7 +231,7 @@ module.exports = function (app, db) {
         }
     })
 
-    app.get("/findlocationsfromcoord", validationParam.validateQueryLonLatQty, (req, res) => {
+    app.get("/findlocationsfromcoord", validationParam.validateQueryLonLatQty, async (req, res) => {
 
         // validate entries
         const errors = validationResult(req);
@@ -247,7 +246,7 @@ module.exports = function (app, db) {
         const lon = Number(longitude);
         const quantity = Number(qty);
 
-        var closestLocations
+        let closestLocations
 
         if (quantity == 1) {
             closestLocations = [getClosestCity(allWorldCities, lat, lon)] //if we are searching only one city we use getClosestCity, it takes half the time compared to getClosestCities
@@ -256,13 +255,37 @@ module.exports = function (app, db) {
         }
 
         if (closestLocations) {
+            // get cities entities
+            const entities = await db.getEntitiesForMultipleLocations(closestLocations)
+
+            // Clear entities array before populating it with new entities
+            closestLocations.forEach(location => {
+                location.entities = [];
+            });
+
+            // assing the entites tot he locations
+            entities.forEach(entity => {
+                // Find the corresponding location
+                const correspondingLocation = closestLocations.find(location => location.name === entity.location);
+
+                // If a corresponding location is found, push the entity into its entities array
+                if (correspondingLocation) {
+                    // Check if the location already has an entities array, if not, create one
+                    if (!correspondingLocation.entities) {
+                        correspondingLocation.entities = [];
+                    }
+                    // Push the entity into the entities array of the corresponding location
+                    correspondingLocation.entities.push(entity);
+                }
+            });
+
             return res.json(closestLocations);
         } else {
             return res.status(404).send('No city found.');
         }
     });
 
-    app.get("/findstatesfromcoord", validationParam.validateQueryLonLatQty, (req, res) => {
+    app.get("/findstatesfromcoord", validationParam.validateQueryLonLatQty, async (req, res) => {
 
         // validate entries
         const errors = validationResult(req);
@@ -283,13 +306,38 @@ module.exports = function (app, db) {
 
 
         if (closestLocations) {
+
+            entities = await db.getStateEntities(closestLocations)
+
+            // Clear entities array before populating it with new entities
+            closestLocations.forEach(location => {
+                location.entities = [];
+            });
+
+            // assing the entites tot he locations
+            entities.forEach(entity => {
+                // Find the corresponding location
+                const correspondingLocation = closestLocations.find(location => location.isoCode === entity.stateCode && location.countryCode === entity.countryCode);
+
+                // If a corresponding location is found, push the entity into its entities array
+                if (correspondingLocation) {
+                    // Check if the location already has an entities array, if not, create one
+                    if (!correspondingLocation.entities) {
+                        correspondingLocation.entities = [];
+                    }
+                    // Push the entity into the entities array of the corresponding location
+                    correspondingLocation.entities.push(entity);
+                }
+            });
+
+
             return res.json(closestLocations);
         } else {
             return res.status(404).send('No city found.');
         }
     });
 
-    app.get("/findcountriesfromcoord", validationParam.validateQueryLonLatQty, (req, res) => {
+    app.get("/findcountriesfromcoord", validationParam.validateQueryLonLatQty, async (req, res) => {
 
         // validate entries
         const errors = validationResult(req);
@@ -309,6 +357,31 @@ module.exports = function (app, db) {
         closestLocations = getClosestCountries(lat, lng, radius)
 
         if (closestLocations) {
+
+    
+            entities = await db.getCountryEntities(closestLocations)
+
+            // Clear entities array before populating it with new entities
+            closestLocations.forEach(location => {
+                location.entities = [];
+            });
+
+            // assing the entites tot he locations
+            entities.forEach(entity => {
+                // Find the corresponding location
+                const correspondingLocation = closestLocations.find(location => location.isoCode === entity.countryCode);
+
+                // If a corresponding location is found, push the entity into its entities array
+                if (correspondingLocation) {
+                    // Check if the location already has an entities array, if not, create one
+                    if (!correspondingLocation.entities) {
+                        correspondingLocation.entities = [];
+                    }
+                    // Push the entity into the entities array of the corresponding location
+                    correspondingLocation.entities.push(entity);
+                }
+            });
+
             return res.json(closestLocations);
         } else {
             return res.status(404).send('No city found.');
@@ -361,7 +434,6 @@ module.exports = function (app, db) {
 
             let entities = await db.getEntities(location, numericLimit, tagsArray);
             if (entities.length > 0) {
-
                 entities = await db.attachAddInfoToEntities(entities)
             }
 
@@ -392,7 +464,10 @@ module.exports = function (app, db) {
             let tagsArray = Array.isArray(tags) ? tags : (tags ? [tags] : []);
 
             let entities = await db.getStateEntities(isoCode, countryCode, numericLimit, tagsArray);
-            entities = await db.attachAddInfoToEntities(entities)
+            if (entities.length > 0) {
+                entities = await db.attachAddInfoToEntities(entities)
+            }
+
 
             return res.json({ entities: entities });
         } catch (error) {
@@ -420,7 +495,9 @@ module.exports = function (app, db) {
             let tagsArray = Array.isArray(tags) ? tags : (tags ? [tags] : []);
 
             let entities = await db.getCountryEntities(countryCode, numericLimit, tagsArray);
-            entities = await db.attachAddInfoToEntities(entities)
+            if (entities.length > 0) {
+                entities = await db.attachAddInfoToEntities(entities)
+            }
 
             return res.json({ entities: entities });
         } catch (error) {
@@ -446,7 +523,9 @@ module.exports = function (app, db) {
             let tagsArray = Array.isArray(tags) ? tags : (tags ? [tags] : []);
 
             let entities = await db.getUserCreatedEntities(userId, limit, tagsArray);
-            entities = await db.attachAddInfoToEntities(entities)
+            if (entities.length > 0) {
+                entities = await db.attachAddInfoToEntities(entities)
+            }
 
             return res.json(entities);
         } catch (error) {
@@ -454,6 +533,26 @@ module.exports = function (app, db) {
             return res.status(500).send('Internal Server Error');
         }
 
+    })
+
+    app.post("/voteentity", requiredAuthenticatedToken, validationParam.validateVoteEntity, async (req, res) => {
+
+        // Check for validation errors
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const user_id = req.user.id
+        const { vote_type, entity_id } = req.body
+        let action 
+        try {
+            action = await db.saveOrUpdateVote(user_id, entity_id, vote_type)
+        } catch (error) {
+            return res.status(500).send({ error: error })
+        }
+
+        return res.status(200).send({ message: "vote saves succesfully", vote_data: action })
     })
 
     app.post("/deleteimage", authenticateToken, async (req, res) => {
@@ -466,12 +565,46 @@ module.exports = function (app, db) {
             console.log(errors);
             return res.status(400).json({ errors: errors.array() });
         }
-
-
     })
 
-    app.post("/changeprofileimage", validationParam.validateSetLocation, authenticateToken, async (req, res) => {
+    // we are using requiredAuthenticatedToken so tha multer will not save the temp file on the server
+    app.post("/changeprofileimage", requiredAuthenticatedToken, multerUpload.single('image'), validationParam.validateChangeProfileImage, async (req, res) => {
 
+        // Check for validation errors
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const user = req.user
+
+        // delete multer temp file
+        try {
+            //save file and thumbnail
+            const fileInfo = await saveSharpScaledImages(req.file)
+
+            //save file into DB and change the profile
+            const filesToDelete = await db.changeProfileImage(user.id, fileInfo)
+
+
+            if (filesToDelete) {
+                deleteFile(filesToDelete.original_location, 2000)
+                deleteFile(filesToDelete.thumbnail_location, 2000)
+            }
+
+            //delete temp files
+            try {
+                // deleteTempFile(req) //unlink failed [Error: EPERM: operation not permitted, unlink
+            } catch (error) {
+                console.log(error);
+            }
+
+        } catch (error) {
+            console.log(error);
+            return res.status(500).json({ errors: error });
+        }
+
+        return res.status(200).redirect("/profile")
     })
 
     // if user is logged in save their choice of location to the database
@@ -495,7 +628,7 @@ module.exports = function (app, db) {
     })
 
     // --- Create Entities ---//
-    app.post("/createentity", multerMultiUpload.array('images', 5), validationParam.validateCreateEntity, authenticateToken, async (req, res) => {
+    app.post("/createentity", requiredAuthenticatedToken, multerUpload.array('images', 10), validationParam.validateCreateEntity, async (req, res) => {
 
         const user = req.user
         if (!user) return res.status(403).send({ error: "you need to login to create a new entity" })
@@ -506,7 +639,7 @@ module.exports = function (app, db) {
             console.log(errors);
             return res.status(400).json({ errors: errors.array() });
         }
-        
+
         // Access validated data
         const jsonData = JSON.parse(req.body.jsonData)
         const data = {
@@ -529,15 +662,15 @@ module.exports = function (app, db) {
         data.dbImages = []
 
         //save everything to databse
-        try {          
+        try {
             // Access uploaded files
             if (req.files && req.files.length > 0) {
 
                 for (let file of req.files) {
                     const fileInfo = await saveSharpScaledImages(file)
                     data.dbImages.push(fileInfo)
+                    deleteFile(file.path, 5000)
                 }
-                
                 await db.addEntityToDatabase(data)
             } else {
                 await db.addEntityToDatabase(data)
@@ -550,7 +683,6 @@ module.exports = function (app, db) {
                 return res.status(500).json({ error: 'Internal server error' });
             }
         }
-
 
         return res.status(201).send({ body: data })
     })

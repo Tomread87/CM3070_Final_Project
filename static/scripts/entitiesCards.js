@@ -22,8 +22,6 @@ function createCard(data) {
     const review = data.reviews.length > 0 ? data.reviews[0].review_text : "No description at this moment"
     let imagesView = ""
 
-    console.log(data.images);
-
     if (data.images) {
         imagesView += `<div class="media-container">`
         data.images.forEach(image => {
@@ -54,8 +52,9 @@ function createCard(data) {
             <div class="created-by-container">
                 <div>created by &#160;<b onclick="window.location.href='/profile?userId=${data.submitted_by}'">${data.username}</b> <img src='/static/assets/badges/${data.badge}'></div>
                 <div class="review-button-container">
-                    <img src="/static/assets/icons/thumb_up.svg" title="upvote">
-                    <img src="/static/assets/icons/thumb_down.svg" title="downvote">
+                    <img src="/static/assets/icons/thumb_up.svg" title="upvote" onclick="voteEntity(${data.entity_id}, 1, this)">
+                    <span class="total-votes">${data.total_votes}</span>
+                    <img src="/static/assets/icons/thumb_down.svg" title="downvote" onclick="voteEntity(${data.entity_id}, -1, this)">
                     <button class="general-button" onclick="window.location.href='/entity?entityId=${data.entity_id}'">Discover More</button>
                 </div>
             </div>
@@ -95,24 +94,4 @@ function replaceNullWithEmptyString(obj) {
         }
     });
     return obj;
-}
-
-function openModal(img) {
-    var modal = document.createElement('div')
-    modal.id = "imgModal"
-    modal.classList.add("modal-overlay")
-    modal.innerHTML = `
-        <div class="modal-content">
-            <span class="close-modal" onclick="closeModal()">&times;</span>
-            <img id="modalImage" class="modal-image" src="">
-        </div>
-    `
-    document.body.appendChild(modal)
-    var modalImg = document.getElementById("modalImage");
-    modalImg.src = img.getAttribute("data-original");
-}
-
-function closeModal() {
-    var modal = document.getElementById("imgModal");
-    modal.remove()
 }

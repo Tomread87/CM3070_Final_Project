@@ -61,14 +61,22 @@ function createUserToken(res, user, rememberme) {
  * @param {*} next next
  * @returns 
  */
-async function authenticateToken(req, res, next) {
+async function authenticateToken(req, res, next, required = false) {
 
     const token = req.cookies.geoKnowToken;
+
+    // if token is not present and authentication is required, send a 403 Forbidden response
+    if (typeof token == 'undefined' && required) {
+        return res.status(403).json({ error: "You need to be logged in to proceed" });
+    }
+
+    
     // if token is not present there is no JWT token
     if (typeof token == 'undefined') {
         req.user = null //set user as null so that it means no user is logged in
         return next()
     }
+
 
     try {
         //decoding del jwt
@@ -89,9 +97,17 @@ async function authenticateToken(req, res, next) {
     }
 }
 
+/** immiedietly sends error if user is not loggedin
+ * @returns authenticateToken(req, res, next, true)
+ */
+async function requiredAuthenticatedToken(req, res, next) {
+        return authenticateToken(req, res, next, true);
+}
+
 module.exports = {
     hash_password,
     compare_hash_password,
     createUserToken,
-    authenticateToken
+    authenticateToken,
+    requiredAuthenticatedToken
 }

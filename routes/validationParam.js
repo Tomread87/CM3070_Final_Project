@@ -93,9 +93,30 @@ const validateCreateEntity = [
             throw new Error('Longitude must be null or between -180 and 180.');
         }
         return true;
-    })
+    }),
+    // setting custom throw errors to manage approppriate message
+    body('images').optional().custom((value, { req }) => {
+        // Check if any files were uploaded
+        if (!req.files || req.files.length === 0) {
+            // No files uploaded, validation passes
+            return true;
+        }
+
+        // Check if all uploaded files are images
+        const allImages = req.files.every(file => file.mimetype.startsWith('image/'));
+
+        if (!allImages) {
+            // At least one file is not an image, throw an error
+            throw new Error('Please upload only image files');
+        }
+
+        // All uploaded files are images, validation passes
+        return true;
+    }),
+
 ];
 
+// calidation middleware for getting entities by location
 const validateGetEntities = [
     query('location')
         .exists() // Makes this field optional
@@ -132,6 +153,7 @@ const validateGetEntities = [
         })
 ];
 
+// Validation middleware for getting entities by state
 const validateGetStateEntities = [
     query('isoCode')
         .exists() // Makes this field optional
@@ -176,6 +198,7 @@ const validateGetStateEntities = [
         })
 ];
 
+// Validation middleware for getting entities by country
 const validateGetCountryEntities = [
     query('countryCode')
         .exists() // Makes this field optional
@@ -211,6 +234,7 @@ const validateGetCountryEntities = [
         })
 ];
 
+// Validation middleware for getting entities by user ID
 const validateUserEntities = [
     query('userId')
         .isInt({ min: 1 }) // Ensure it's an integer greater than 0
@@ -240,25 +264,54 @@ const validateUserEntities = [
         })
 ];
 
+// Validation middleware for getting an entity by ID
 const validateProfile = [
     query('userId')
-    .optional()
-    .isInt({ min: 1 }) // Ensure it's an integer greater than 0
-    .withMessage('userId is required'),
+        .optional()
+        .isInt({ min: 1 }) // Ensure it's an integer greater than 0
+        .withMessage('userId is required'),
 ]
 
+// Validation middleware for getting an entity by ID
 const validateEntity = [
     query('entityId')
-    .isInt({ min: 1 }) // Ensure it's an integer greater than 0
-    .withMessage('an entityId is required to view this page'),
+        .isInt({ min: 1 }) // Ensure it's an integer greater than 0
+        .withMessage('an entityId is required to view this page'),
 ]
 
+// Validation middleware for voting form
+const validateVoteEntity = [
+    body('entity_id').notEmpty().isInt(),
+    body('vote_type').notEmpty().isInt().isIn([-1, 0, 1])
+];
 
 //validate post request to ser location
 const validateSetLocation = [
     body('name').isString().withMessage('Name must be a string'),
     body('lat').isFloat().withMessage('Latitude must be a float number'),
     body('lng').isFloat().withMessage('Longitude must be a float number'),
+]
+
+const validateChangeProfileImage = [
+
+    // setting custom throw errors to manage approppriate message
+    body('image').custom((value, { req }) => {
+        // Check if req.file is present
+        if (!req.file) {
+            throw new Error('Please upload an image file');
+        }
+        // Check if only one file is uploaded
+        if (!req.file && req.files) {
+            throw new Error('Please upload only one image file');
+        }
+        // Check if the uploaded file is an image
+        if (req.file && !req.file.mimetype.startsWith('image/')) {
+            throw new Error('Please upload a valid image file');
+        }
+        // Return true if validation passes
+        return true;
+    }),
+
 ]
 
 module.exports = {
@@ -273,5 +326,7 @@ module.exports = {
     validateGetCountryEntities,
     validateUserEntities,
     validateProfile,
-    validateEntity
+    validateEntity,
+    validateChangeProfileImage,
+    validateVoteEntity
 }

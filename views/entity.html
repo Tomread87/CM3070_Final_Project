@@ -55,6 +55,20 @@
         .media-container img:hover {
             transform: translate(0, -2px);
         }
+
+        .google-button {
+            background: #fff;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-color: #ccc;
+        }
+
+        .google-button:hover {
+            background-color: #333333ef;
+            color: #fff;
+        }
     </style>
 </head>
 
@@ -69,7 +83,11 @@
             <div class="map-button-container">
                 <div id="close-open-map" class="submit-button" style="max-width: fit-content;">Close Map</div>
                 <div id="find-my-location" class="submit-button" style="max-width: fit-content;">Find Where I Am</div>
+                <% if(entity.lat && entity.lng) { %>
+                <div id="open-google-maps" class="submit-button google-button" style="max-width: fit-content; "><img height="20px" src="/static/assets/icons/google-maps-svgrepo-com.svg">Open in Google Maps</div>
+                <% } %>
             </div>
+
             <div id="drag-map" style="cursor: ns-resize; background-color: #333; text-align: center;">
                 <div></div>
             </div>
@@ -160,6 +178,7 @@
     var findMeLayer = L.layerGroup().addTo(map);
     var clickLayer = L.layerGroup().addTo(map);
     var markersLayer = L.layerGroup().addTo(map);
+    var entityLayer = L.layerGroup().addTo(map);
     var addingSpot = false
     var currentLocation = null
 
@@ -221,7 +240,7 @@
 
             // Automatically zoom the map to the location
             marker.bindPopup("You should be within " + radius + " meters from this point.<br> The closest location is " + city[0].name).openPopup();
-            map.setView(e.latlng, 15); // 13 is the zoom level, adjust as needed
+            map.setView(e.latlng, 13); // 13 is the zoom level, adjust as needed
 
 
         });
@@ -266,25 +285,31 @@
                     </div>  
                 </div>
                 `, // HTML content for the icon
-                iconAnchor: [0, 10], // Anchor point of the icon to the marker
+                iconAnchor: [0, 0], // Anchor point of the icon to the marker
             });
         }
 
         let latlng
-        
-        if (entity.lat && entity.lng) latlng = {lat:entity.lat, lng:entity.lng}
-        else latlng = { lat:entity.city.latitude, lng:entity.city.longitude }
 
-        
+        if (entity.lat && entity.lng) latlng = {
+            lat: entity.lat,
+            lng: entity.lng
+        }
+        else latlng = {
+            lat: entity.city.latitude,
+            lng: entity.city.longitude
+        }
+
+
         // create the custom marker 
         const marker = L.marker(latlng, {
             icon: customIcon(entity)
         })
 
-        markersLayer.addLayer(marker)
+        entityLayer.addLayer(marker)
 
 
-        addHoverEventListene()
+        addHoverEventListener()
     }
 </script>
 
@@ -300,6 +325,7 @@
             console.error('Location error:', error);
         });
     })
+
 
     // Function to add hover event listener to marker icons on map
     function addHoverEventListener() {
@@ -317,6 +343,9 @@
             });
         });
     }
+
+
+
 </script>
 
 <!-- Drag Map New Code To Include Touchscreens -->
@@ -365,6 +394,7 @@
 </script>
 
 <!-- Show All options if location exists or is selected -->
+
 <script>
     var entity
     getEntity('<%= entity.entity_id %>')
@@ -372,10 +402,27 @@
             entity = data;
             console.log(entity);
 
-            const latlng = entity.lat && entity.lng ? {lat: entity.lat,lng: entity.lng} : {lat: entity.city.latitude,lng: entity.city.longitude} 
+            // fin out if entity has it's own lat or lng otherwise use 
+            const latlng = entity.lat && entity.lng ? {
+                lat: entity.lat,
+                lng: entity.lng
+            } : {
+                lat: entity.city.latitude,
+                lng: entity.city.longitude
+            };
 
-            goToLocation(map, latlng.lat, latlng.lng, 14)
+            // go to location on map and show entity location
+            goToLocation(map, latlng.lat - 0.004, latlng.lng, 14)
             addEntityMarker(entity)
+
+            // add go to google listener
+            if (entity.lat && entity.lng) {
+                console.log(entity.lat, entity.lng)
+
+                document.getElementById("open-google-maps").addEventListener("click", () => {
+                    openGoogleMaps(entity.lat, entity.lng);
+                });
+            }
 
         })
 </script>

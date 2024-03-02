@@ -31,10 +31,12 @@ async function getUser(email = null, username = null) {
 async function getUserData(id) {
     try {
         const [userData] = await pool.execute(
-            `SELECT u.id, u.username, u.email, u.join_date, usl.location_name, usl.lat, usl.lng, COUNT(ke.entity_id), u.badge AS total_entries
+            `SELECT u.id, u.username, u.email, u.join_date, usl.location_name, usl.lat, usl.lng, 
+            COUNT(ke.entity_id) AS total_entries, u.badge, ui.original_name, ui.original_location, ui.thumbnail_location  
             FROM users as u
             LEFT JOIN user_set_location as usl ON u.id = usl.user_id
             LEFT JOIN knowledge_entities AS ke ON u.id = ke.submitted_by
+            LEFT JOIN uploaded_images as ui on ui.id = u.image
             WHERE u.id = ?
             GROUP BY u.id;`,
             [id]
@@ -139,9 +141,11 @@ async function addEntityToDatabase(data) {
         await connection.rollback();
         pool.releaseConnection()
         throw error;
+    } finally {
+        pool.releaseConnection(connection)
     }
 
-    pool.releaseConnection()
+
 }
 
 //function to retirev entities from db, either all locations or a specified location
@@ -193,8 +197,57 @@ async function getEntities(location = null, limit = 9, tags = []) {
     }
 }
 
+//function to retrieve entities from the database for multiple locations
+async function getEntitiesForMultipleLocations(locations, limit = 10000, tags = []) {
+    try {
+        let query;
+        let params = [];
+
+        // Create subquery for filtering entities based on tags
+        // Future consideration: sort the values by the number of matching tags
+        let tagsSubquery = '';
+        if (tags.length > 0) {
+            tagsSubquery = `
+                SELECT ekt.entity_id
+                FROM entity_knowledge_tags ekt
+                INNER JOIN tags t ON ekt.tag_id = t.tag_id
+                WHERE t.tag_name IN (?)
+                GROUP BY ekt.entity_id
+            `;
+            tags = tags.length > 0 ? tags : "";
+            params.push(tags);
+        }
+
+        // Construct the WHERE clause for locations and subquery from tags
+        let whereClauses = [];
+        if (tagsSubquery) {
+            whereClauses.push(`ke.entity_id IN (${tagsSubquery})`);
+        }
+        if (locations && locations.length > 0) {
+            let locationParams = locations.map(location => location.name);
+            whereClauses.push(`ke.location IN (${Array(locationParams.length).fill('?').join(', ')})`);
+            params.push(...locationParams);
+        }
+
+        // Join all queries
+        let whereClause = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+        // Main query
+        query = createMainGetEntitiesQuery(whereClause);
+
+        // Add the limit to the parameters
+        params.push(limit);
+
+        const [rows] = await pool.query(query, params);
+        return rows;
+    } catch (error) {
+        console.error('Database error:', error);
+        throw error;
+    }
+}
+
 //function to retirev entities from db that match the state code
-async function getStateEntities(isoCode, countryCode, limit = 9, tags = []) {
+async function getStateEntities(isoCodes, countryCode, limit = 10000, tags = []) {
     try {
         let query;
         let params = [];
@@ -221,9 +274,19 @@ async function getStateEntities(isoCode, countryCode, limit = 9, tags = []) {
         if (tagsSubquery) {
             whereClauses.push(`ke.entity_id IN (${tagsSubquery})`);
         }
-        if (isoCode && countryCode) {
-            whereClauses.push("ke.stateCode = ? and ke.countryCode = ?");
-            params.push(isoCode);
+
+
+        // Construct the WHERE clause for state codes and country code
+        if (isoCodes && Array.isArray(isoCodes) && isoCodes.length > 0) {
+            // If isoCodes is an array, construct multiple OR conditions for each state
+            const stateConditions = isoCodes.map(() => '(ke.stateCode = ? AND ke.countryCode = ?)').join(' OR ');
+            whereClauses.push(`(${stateConditions})`);
+            //console.log(isoCodes);
+            isoCodes.forEach(state => { params.push(state.isoCode); params.push(state.countryCode); });
+        } else if (isoCodes && !Array.isArray(isoCodes) && countryCode) {
+            // If isoCodes is a single state code
+            whereClauses.push('ke.stateCode = ? AND ke.countryCode = ?');
+            params.push(isoCodes);
             params.push(countryCode);
         }
 
@@ -237,8 +300,6 @@ async function getStateEntities(isoCode, countryCode, limit = 9, tags = []) {
         // Add the limit to the parameters
         params.push(limit);
 
-
-
         const [rows] = await pool.query(query, params);
 
         return rows;
@@ -249,7 +310,7 @@ async function getStateEntities(isoCode, countryCode, limit = 9, tags = []) {
 }
 
 //function to retrieve entities from db that match the country code
-async function getCountryEntities(countryCode, limit = 9, tags = []) {
+async function getCountryEntities(countryCodes, limit = 10000, tags = []) {
     try {
         let query;
         let params = [];
@@ -274,9 +335,22 @@ async function getCountryEntities(countryCode, limit = 9, tags = []) {
         if (tagsSubquery) {
             whereClauses.push(`ke.entity_id IN (${tagsSubquery})`);
         }
-        if (countryCode) {
+
+
+        // Construct the WHERE clause for state codes and country code
+        if (countryCodes && Array.isArray(countryCodes) && countryCodes.length > 0) {
+
+            const countryConditions = countryCodes.map(() => 'ke.countryCode = ?').join(' OR ');
+            whereClauses.push(`(${countryConditions})`);
+            countryCodes.forEach(country => { params.push(country.isoCode); });
+        } else if (countryCodes && !Array.isArray(countryCodes)) {
             whereClauses.push("ke.countryCode = ?");
-            params.push(countryCode);
+            params.push(countryCodes);
+        }
+
+
+        if (countryCodes) {
+
         }
 
 
@@ -493,6 +567,117 @@ async function attachAddInfoToEntities(entities) {
     }
 }
 
+// set the new image as profile return old iamge to be deleted
+async function changeProfileImage(userId, fileInfo) {
+
+    // Get e connection
+    const connection = await pool.getConnection()
+
+    let fileToDelete = false
+
+    try {
+        // Start a transaction
+        await connection.beginTransaction();
+        // Fetch the current image details
+        const [currentImageRows] = await connection.query('SELECT image FROM users WHERE id = ?', [userId]);
+
+        if (currentImageRows.length > 0) {
+            const currentImageId = currentImageRows[0].image;
+            const [imageToDeleteRows] = await connection.query('SELECT * FROM uploaded_images WHERE id = ?', [currentImageId]);
+            if (imageToDeleteRows.length > 0) {
+                fileToDelete = imageToDeleteRows[0];
+            }
+        }
+
+        // Insert the new image details
+        const [imageResult] = await connection.query('INSERT INTO uploaded_images (original_name, original_location, thumbnail_location, uploaded_by) VALUES (?, ?, ?, ?)',
+            [fileInfo.originalName, fileInfo.original_location, fileInfo.thumbnail_location, userId]);
+
+        // update user image
+        const imageId = imageResult.insertId;
+        await connection.query('UPDATE users SET image = ? WHERE id = ?', [imageId, userId])
+
+        // delete from DB old image
+        if (currentImageRows.length > 0) {
+            await connection.query('DELETE FROM uploaded_images WHERE id = ?', [fileToDelete.id])
+        }
+
+
+        // Commit the transaction
+        await connection.commit();
+
+        return fileToDelete
+
+    } catch (error) {
+        console.error('Error fetching images:', error);
+        throw error; // Propagate the error
+    } finally {
+        // Regardless of whether an error occurred or not, release the connection back to the pool
+        pool.releaseConnection(connection)
+    }
+
+
+}
+
+// saves the vote of a user in teh databse or updates teh value if vote alerasdy exists
+async function saveOrUpdateVote(user_id, entity_id, vote_type) {
+
+    // Get e connection
+    const connection = await pool.getConnection()
+    let action = ""
+    let vote
+
+    try {
+
+        // Start a transaction
+        await connection.beginTransaction();
+
+        // Check if the entity exists
+        const [entity] = await connection.query(
+            'SELECT * FROM knowledge_entities WHERE entity_id = ?',
+            [entity_id]
+        );
+
+        if (entity.length === 0) {
+            throw new Error('Entity does not exist');
+        }
+
+        // Check if a vote for the same entity by the same user already exists
+        const [existingVote] = await connection.query(
+            'SELECT * FROM entity_votes WHERE entity_id = ? AND user_id = ?',
+            [entity_id, user_id]
+        );
+
+        if (existingVote.length > 0) {
+            // Update the existing vote
+            await connection.query(
+                'UPDATE entity_votes SET vote_type = ? WHERE entity_id = ? AND user_id = ?',
+                [vote_type, entity_id, user_id]
+            );
+            action = "update"
+            vote = existingVote[0].vote_type
+            //console.log('Vote updated successfully');
+        } else {
+            // Insert a new vote
+            await connection.query(
+                'INSERT INTO entity_votes (entity_id, user_id, vote_type) VALUES (?, ?, ?)',
+                [entity_id, user_id, vote_type]
+            );
+            action = "insert"; vote = vote_type
+            //console.log('Vote saved successfully');
+        }
+
+        // Commit the transaction
+        await connection.commit();
+    } catch (error) {
+        console.error('Error saving or updating vote:', error);
+        throw error; // Propagate the error
+    } finally {
+        // Regardless of whether an error occurred or not, release the connection back to the pool
+        pool.releaseConnection(connection)
+        return {action, db_vote: vote}
+    }
+}
 
 // this is the main query to get all the entity information
 function createMainGetEntitiesQuery(whereClause) {
@@ -505,7 +690,8 @@ function createMainGetEntitiesQuery(whereClause) {
            u.username,
            u.email AS user_email,
            u.join_date,
-           u.badge
+           u.badge,
+           COALESCE(v.total_votes, 0) AS total_votes
     FROM knowledge_entities ke
     LEFT JOIN entity_emails em ON ke.entity_id = em.entity_id
     LEFT JOIN entity_phones ep ON ke.entity_id = ep.entity_id
@@ -513,12 +699,18 @@ function createMainGetEntitiesQuery(whereClause) {
     LEFT JOIN entity_knowledge_tags ekt ON ke.entity_id = ekt.entity_id
     LEFT JOIN tags t ON ekt.tag_id = t.tag_id
     LEFT JOIN users u ON ke.submitted_by = u.id
+    LEFT JOIN (
+        SELECT entity_id, SUM(vote_type) AS total_votes
+        FROM entity_votes
+        GROUP BY entity_id
+    ) v ON ke.entity_id = v.entity_id
     ${whereClause}
     GROUP BY ke.entity_id
     ORDER BY ke.entity_id DESC 
     LIMIT ?
 `
 }
+
 
 
 
@@ -530,6 +722,7 @@ module.exports = {
     addEntityToDatabase,
     getEntity,
     getEntities,
+    getEntitiesForMultipleLocations,
     getStateEntities,
     getCountryEntities,
     getUserCreatedEntities,
@@ -539,5 +732,7 @@ module.exports = {
     updateUserBadge,
     getAllImagesFromEntities,
     attachAddInfoToEntities,
-    getReviewsFromEntities
+    getReviewsFromEntities,
+    changeProfileImage,
+    saveOrUpdateVote
 } 

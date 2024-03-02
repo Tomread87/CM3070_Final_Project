@@ -63,15 +63,6 @@ function animateNumbers() {
     }
   }
 
-/*setTimeout(() => {
-    
-    // element is in view start function
-    var numbers = numbers_container.getElementsByClassName("stat-numbers")
-    for (let num of numbers) {
-        counter_animation(num)
-    }
-}, 100)*/
-
 // listen for scroll event and call animate function
 if (!inView(300)) {
     document.addEventListener('scroll', animateNumbers);

@@ -67,4 +67,45 @@
 
 }
 
+.file-upload {
+    border: 2px dashed #ccc;
+    border-radius: 10px;
+    text-align: center;
+    max-width: 350px;
+    margin-bottom: 0;
+}
+
+.file-upload img {
+    height: 1.8em
+}
+
+.file-upload:hover {
+    background-color: #eee;
+    border-color: #3333;
+    font-size: 1.1em;
+}
+
+.file-upload-label {
+    padding: 30px 20px;
+    cursor: pointer;
+    font-size: 1.1em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    filter: contrast(0.8);
+    transition: 0.15s ease-in-out;
+}
+
+.dragover {
+    transition: 0.15s ease-in-out;
+    background-color: #eee;
+    border-color: #3333;
+    font-size: 1.1em;
+}
+
+.file-upload input[type="file"] {
+    display: none;
+}
+
+
 /** END of Modal**/
