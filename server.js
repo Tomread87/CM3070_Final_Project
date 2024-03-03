@@ -8,7 +8,6 @@ const fs = require('fs');
 const http = require('http');
 const https = require('https');
 const express = require('express');
-const pem = require('pem')
 
 //start server
 const httpPort = 80;

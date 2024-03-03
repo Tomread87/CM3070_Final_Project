@@ -39,6 +39,7 @@ async function getEntity(id) {
         method: 'GET',
     }).catch((error) => {
         console.error('Error:', error);
+        throw error
         // Handle errors here
     });
 
@@ -262,16 +263,163 @@ function voteEntity(entityId, voteType, clickedElement) {
             } else {
                 let db_vote = data.vote_data.db_vote
                 if (db_vote != voteType) {
-                    span.innerText = parseInt(span.innerText) + parseInt(voteType*2)
+                    span.innerText = parseInt(span.innerText) + parseInt(voteType * 2)
                 }
             }
             // Add vote-selected class to the clicked element
 
 
-            
+
         })
         .catch(error => {
             // Handle fetch error
             console.error('Error while submitting vote:', error);
         });
+}
+
+async function deleteEntity(entityId) {
+
+    try {
+        const response = await fetch(`/deleteentity?entityId=${entityId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        if (!response.ok) {
+            const errorMessage = await response.text();
+            throw new Error(`Failed to delete entity: ${errorMessage}`);
+        }
+        const data = await response.json();
+        create_success_message(`Knowledge Removed`, `You have succesfully 
+        <b>removed ${data.entity.entity_name}</b> and it will not be visible anymore, you will now be redirected to the homepage`,
+            "window.location.href='/'")
+    } catch (error) {
+        console.error('Error deleting entity:', error);
+        create_alert_message("Attention", `${error}`)
+    }
+}
+
+// Fetch Request to Add Entity 
+async function submitEntityForm(type) {
+
+    if (type != 'new' && type != 'update') return console.error("missing parameter type, it should be either new or update")
+
+    const entityName = document.getElementById('entity-name').value;
+    const entityTag = document.getElementById('entity-tag').value.split(',').map(tag => tag.trim());
+    const phoneNumber = document.getElementById('contact-phone-number').value;
+    const email = document.getElementById('contact-email').value;
+    const website = document.getElementById('contact-website').value;
+    const review = document.querySelector('textarea[name="entity-review"]').value.trim();
+    const location = await JSON.parse(localStorage.getItem("location"))
+
+
+    var entityLatitutde = document.getElementById('entity-latitude') ? document.getElementById('entity-latitude').value : null;
+    var entityLongitude = document.getElementById('entity-longitude') ? document.getElementById('entity-longitude').value : null;
+
+    if (entityName == "") {
+        closeMessageModal()
+        return document.querySelector("#tag-error-message").innerText = "You need to add the Name of the service or spot"
+    }
+
+    // at least one entity tag required
+    if (entityTag == "") {
+        closeMessageModal()
+        return document.querySelector("#tag-error-message").innerText = "At least one tag must be added"
+    }
+
+    // at least one contact detail required
+    if (email == "" && phoneNumber == "" && website == "" && !entityLatitutde && !entityLongitude) {
+        closeMessageModal()
+        return document.querySelector("#contact-error-message").innerText = "At least one contact detail must be added, or coordinates must be present"
+    }
+
+    if (!isValidLocation(location)) {
+        closeMessageModal()
+        create_alert_message("No Location Selected", "<div style='text-align: left'>To proceed you need to select a location by:<br> - selecting one location with green borders on the map<br> - selecting from the list just below the map<br> - click on find where I am and then set the location</div>")
+    }
+
+
+    // create an object to send to server
+    const data = {
+        entityName: entityName,
+        entityTag: entityTag,
+        phoneNumber: phoneNumber,
+        email: email,
+        website: website,
+        review: review,
+        location: location.name,
+        locationLat: location.lat,
+        locationLng: location.lng,
+        lat: entityLatitutde,
+        lng: entityLongitude
+    };
+
+    if (type === "update") {
+        data.entityId = document.getElementById("update-form-entityId").value   
+    }
+
+    const formData = new FormData();
+
+    // Get all selected files
+    const files = document.getElementById('entity-image').files;
+
+    // Append each file to FormData
+    for (const file of files) {
+        formData.append("images", file);
+    }
+
+    // Append the jsonData
+    formData.append("jsonData", JSON.stringify(data))
+
+    // show loading animation
+    document.querySelector(".loading-animation").style.display = "contents"
+
+    //hide message
+    document.querySelector(".prompt-message").style.display = "none"
+
+    const url = type === 'new' ? '/createentity' : '/updateentity'
+    console.log(data);
+
+    // Use fetch API to send the data to the server
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+    })
+        .then(response => {
+            // close all previous message modals
+            closeMessageModal()
+            if (response.ok) response.json()
+            else if (response.status == 403) throw new Error("You need to be registered and logged in to add local knowledge")
+            else if (response.status >= 400 && response.status <= 400) throw new Error("Something is wrong with the request")
+            else if (response.status >= 500) throw new Error("Ops! Something went wrong, it's not your fault it's ours and we will try to fix it as soon as possible.")
+        })
+        .then(data => {
+            console.log('Success:', data);
+            //Will need to create popup message to show success
+            create_success_message("Knowledge Created", "New Knowledge Added Successfully", "window.location.reload()")
+            //window.location.reload()
+        })
+        .catch((error) => {
+            console.error(error);
+            // Handle errors here, such as showing an error message to the user
+            create_alert_message("Attention", "Something went wrong:\n" + error)
+        });
+
+}
+
+
+function isValidLocation(data) {
+    // Check if data is an object and has the required properties
+    if (typeof data === 'object' && data !== null) {
+        if ('name' in data && 'lat' in data && 'lng' in data) {
+            // Check if lat and lng are valid numbers
+            if (typeof data.lat === 'number' && !isNaN(data.lat) &&
+                typeof data.lng === 'number' && !isNaN(data.lng)) {
+                return true; // Data is valid
+            }
+        }
+    }
+    return false; // Data is invalid
 }

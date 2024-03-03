@@ -50,15 +50,14 @@ footer>div {
 }
 
 #location-selection-wrapper {
-    background-color: #f4f4f4;
     text-align: center;
     padding: 20px;
 
 }
 
 .main-container {
-    max-width: 1200px;
-    margin: auto;
+    max-width: 1600px;
+    margin: 0 auto;
     padding: 20px;
     width: 100%;
     box-sizing: border-box;
@@ -84,6 +83,16 @@ footer>div {
     align-items: center;
 
 
+}
+
+.top-index-options {
+    display: flex; 
+    flex-direction: row-reverse;
+    flex-wrap: wrap;
+}
+
+.top-index-options  h2 {
+    margin: 8px;
 }
 
 .expand-container {
@@ -137,12 +146,15 @@ input {
     border: solid 1px var(--main-green);
 }
 
+.alert-action-button {
+    background-color: #af4c50; 
+    border-color: darkred;
+}
+
 .cancel-button {
     background-color: darkslategray;
     border-color: darkslategray;
 }
-
-
 
 .submit-button:hover,
 .general-button:hover,
@@ -150,6 +162,12 @@ input {
     background-color: #4caf50cc;
     color: #fff;
     border-color: #fff;
+}
+
+.alert-action-button:hover {
+    border-color: #fff;
+    color: #fff;
+    background-color: darkred;
 }
 
 .cancel-button:hover {
@@ -217,7 +235,8 @@ input {
 }
 
 #show-city-name {
-    margin-bottom: 26px;
+    font-size: 1.4em;
+    text-align: center;
 }
 
 .form-error-message {
@@ -246,9 +265,16 @@ input {
     box-shadow: 0 0 5px #3333;
     overflow-y: auto;
     position: relative;
-    font-size: 0.75em;
+    font-size: 0.85em;
     border-radius: 8px;
     padding: 20px;
+}
+
+.knowledge-form-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px;
 }
 
 #create-entity>div:first-child {
@@ -316,6 +342,7 @@ input {
 .tags-result-wrapper {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
 }
 
 #search-tag-results {
@@ -324,7 +351,7 @@ input {
 
 .entity-card {
     flex: 0 0 calc(50% - 5px);
-    border: solid 1px var(--main-green);
+    border: solid 3px var(--main-green);
     background-color: #fff;
     text-align: left;
     padding: 12px;
@@ -359,7 +386,7 @@ input {
     height: auto;
     margin-top: 6px;
     display: flex;
-    gap: 4px;
+    gap: 8px;
     flex-wrap: wrap;
 }
 
@@ -605,6 +632,16 @@ input {
     animation-iteration-count: 1;
 }
 
+.logo-header > div {
+    color: #fff; font-weight: 700; font-size: x-large; margin-left: 4px;
+}
+
+
+.logo-header > img {
+    height: 2.8em;
+    border-radius: 8px;
+}
+
 @keyframes modal-anim {
     0% {
         opacity: 0;
@@ -622,6 +659,19 @@ input {
     .entity-card {
         min-width: auto;
         flex: 1;
+    }
+
+    header {
+        font-size: 0.8em;
+        padding: 6px 10px
+    }
+
+    .logo-header > div {
+        font-size: 1em;
+    }
+
+    .map-button-container {
+        font-size: 0.7em;
     }
 }
 

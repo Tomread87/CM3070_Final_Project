@@ -358,7 +358,7 @@ module.exports = function (app, db) {
 
         if (closestLocations) {
 
-    
+
             entities = await db.getCountryEntities(closestLocations)
 
             // Clear entities array before populating it with new entities
@@ -545,7 +545,7 @@ module.exports = function (app, db) {
 
         const user_id = req.user.id
         const { vote_type, entity_id } = req.body
-        let action 
+        let action
         try {
             action = await db.saveOrUpdateVote(user_id, entity_id, vote_type)
         } catch (error) {
@@ -553,6 +553,10 @@ module.exports = function (app, db) {
         }
 
         return res.status(200).send({ message: "vote saves succesfully", vote_data: action })
+    })
+
+    /*app.post("/leavereview", authenticateToken, async (req, res) => {
+
     })
 
     app.post("/deleteimage", authenticateToken, async (req, res) => {
@@ -565,6 +569,183 @@ module.exports = function (app, db) {
             console.log(errors);
             return res.status(400).json({ errors: errors.array() });
         }
+    })*/
+
+
+    // --- Create Entity ---//
+    app.post("/createentity", requiredAuthenticatedToken, multerUpload.array('images', 10), validationParam.validateCreateEntity, async (req, res) => {
+
+        const user = req.user
+        if (!user) return res.status(403).send({ error: "you need to login to create a new entity" })
+
+        // Check for validation errors       
+        const errors = validationResult(req.body.jsonData);
+        if (!errors.isEmpty()) {
+            console.log(errors);
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        // Access validated data
+        const jsonData = JSON.parse(req.body.jsonData)
+        const data = {
+            entityName, entityTag, phoneNumber, email, website, review, location,
+            locationLat, locationLng, lat, lng
+        } = jsonData;
+
+        // Get Country Code and State Code make sure location name is always valid with Country, state, city library
+        let city
+        if (!lat && !lng) {
+            city = getClosestCity(allWorldCities, locationLat, locationLng)
+        } else {
+            city = getClosestCity(allWorldCities, lat, lng)
+        }
+
+        // Add user id, city name, stateCode and countryCode to data
+        data.userId = user.id
+        data.location = city.name
+        data.countryCode = city.countryCode
+        data.stateCode = city.stateCode
+        data.dbImages = []
+
+        //save everything to databse
+        try {
+            // Access uploaded files
+            if (req.files && req.files.length > 0) {
+
+                for (let file of req.files) {
+                    const fileInfo = await saveSharpScaledImages(file)
+                    data.dbImages.push(fileInfo)
+                    deleteFile(file.path, 5000)
+                }
+                await db.addEntityToDatabase(data)
+            } else {
+                await db.addEntityToDatabase(data)
+            }
+        } catch (error) {
+            console.log('createentity', error);
+            if (error.code === 'LIMIT_FILE_SIZE') {
+                res.status(400).json({ error: 'File size exceeds the limit of 10MB' });
+            } else {
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+        }
+
+        return res.status(201).send({ body: data })
+    })
+
+    // --- Upate Entity ---//
+    app.post("/updateentity", requiredAuthenticatedToken, multerUpload.array('images', 10), validationParam.validateCreateEntity, validationParam.validateEntity, async (req, res) => {
+
+        const user = req.user
+        if (!user) return res.status(403).send({ error: "you need to login to create a new entity" })
+
+        // Check for validation errors       
+        const errors = validationResult(req.body.jsonData);
+        if (!errors.isEmpty()) {
+            console.log(errors);
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        
+
+        // Access validated data
+        const jsonData = JSON.parse(req.body.jsonData)
+        
+        const data = {
+            entityName, entityTag, phoneNumber, email, website, review, 
+            lat, lng, entityId
+        } = jsonData;
+
+        let entity
+        // get the entity that we want to update and check if the logged in user is actually the owner
+        try {
+            entity = await db.getEntity(data.entityId)
+            if (!entity.length>0) throw new Error("Entity was not found")
+            if (entity[0].submitted_by != user.id) throw new Error("current user is not owner of entity")
+
+            entity = await db.attachAddInfoToEntities(entity)
+        } catch (error) {
+            console.log(error);
+            return res.status(404).send({errors: "entity not found, please reload the page"})
+        }
+
+
+        // Get Country Code and State Code
+        let city = false
+        if (lat && lng) {
+            city = getClosestCity(allWorldCities, lat, lng)
+        }
+
+        // Add user id, stateCode and countryCode to data
+        data.userId = user.id
+        if (city) {
+            data.location = city.name
+            data.countryCode = city.countryCode
+            data.stateCode = city.stateCode
+        } else {
+            data.location = false
+        }
+        data.dbImages = []
+
+        //save files and update to database
+        try {
+            // Access uploaded files
+            if (req.files && req.files.length > 0) {
+
+                for (let file of req.files) {
+                    const fileInfo = await saveSharpScaledImages(file)
+                    data.dbImages.push(fileInfo)
+                    // deleteFile(file.path, 5000) eprom error can't delete temp files
+                }
+                await db.updateEntityInDatabase(data, entity[0])
+            } else {
+                await db.updateEntityInDatabase(data, entity[0])
+            }
+        } catch (error) {
+            console.log('createentity', error);
+            if (error.code === 'LIMIT_FILE_SIZE') {
+                res.status(400).json({ error: 'File size exceeds the limit of 10MB' });
+            } else {
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+        }
+
+        return res.status(201).send({ body: data })
+    })
+
+    // adds an entity into the delete table
+    app.get("/deleteentity", requiredAuthenticatedToken, validationParam.validateEntity, async (req, res) => {
+
+        // Check for validation errors
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        //retrieve data from query
+        const { entityId } = req.query
+
+
+        try {
+            let entity = await db.getEntity(entityId)
+
+            if (entity.length == 0) {
+                return res.status(404).json({ errors: "knowledge doesn't exist" });
+            }
+
+            entity = entity[0]
+
+            // check if the owner is requesting deletion
+            if (!(entity.submitted_by === req.user.id)) return res.status(403).json({ errors: "you don't have permission to delete this entity" });
+            else await db.deleteEntityToTable(entityId, req.user.id)
+            return res.json({ message: "entity deleted successfully", entity })
+
+        } catch (error) {
+            console.log(error);
+            return res.status(500).send({ Jsonerror });
+        }
+
+
     })
 
     // we are using requiredAuthenticatedToken so tha multer will not save the temp file on the server
@@ -627,65 +808,7 @@ module.exports = function (app, db) {
         return res.send({ "mex": "set location", "body": req.body, user })
     })
 
-    // --- Create Entities ---//
-    app.post("/createentity", requiredAuthenticatedToken, multerUpload.array('images', 10), validationParam.validateCreateEntity, async (req, res) => {
 
-        const user = req.user
-        if (!user) return res.status(403).send({ error: "you need to login to create a new entity" })
-
-        // Check for validation errors       
-        const errors = validationResult(req.body.jsonData);
-        if (!errors.isEmpty()) {
-            console.log(errors);
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        // Access validated data
-        const jsonData = JSON.parse(req.body.jsonData)
-        const data = {
-            entityName, entityTag, phoneNumber, email, website, review, location,
-            locationLat, locationLng, lat, lng
-        } = jsonData;
-
-        // Get Country Code and State Code
-        let city
-        if (!lat && !lng) {
-            city = getClosestCity(allWorldCities, locationLat, locationLng)
-        } else {
-            city = getClosestCity(allWorldCities, lat, lng)
-        }
-
-        // Add user id, stateCode and countryCode to data
-        data.userId = user.id
-        data.countryCode = city.countryCode
-        data.stateCode = city.stateCode
-        data.dbImages = []
-
-        //save everything to databse
-        try {
-            // Access uploaded files
-            if (req.files && req.files.length > 0) {
-
-                for (let file of req.files) {
-                    const fileInfo = await saveSharpScaledImages(file)
-                    data.dbImages.push(fileInfo)
-                    deleteFile(file.path, 5000)
-                }
-                await db.addEntityToDatabase(data)
-            } else {
-                await db.addEntityToDatabase(data)
-            }
-        } catch (error) {
-            console.log('createentity', error);
-            if (error.code === 'LIMIT_FILE_SIZE') {
-                res.status(400).json({ error: 'File size exceeds the limit of 10MB' });
-            } else {
-                return res.status(500).json({ error: 'Internal server error' });
-            }
-        }
-
-        return res.status(201).send({ body: data })
-    })
 
 }
 

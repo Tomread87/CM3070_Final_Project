@@ -17,7 +17,6 @@
 
     <!-- Include geolocalization and other scripts -->
     <script src="/static/scripts/entitiesCards.js"></script>
-    <script src="/static/scripts/home.js"></script>
 
     <style>
         .entity-card {
@@ -28,7 +27,7 @@
             height: 1.5em;
         }
 
-        .entity-card-review {
+        .entityreview {
             max-width: 300px;
             border: dotted 1px green;
             min-width: 150px;
@@ -37,8 +36,14 @@
             margin-top: 4px;
         }
 
-        .entity-card-review b {
+        .entityreview b {
             cursor: pointer;
+        }
+
+        .entity-card-review {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
         .review-by {
@@ -69,6 +74,10 @@
             background-color: #333333ef;
             color: #fff;
         }
+
+        #open-google-maps img {
+            height: 1.25em
+        }
     </style>
 </head>
 
@@ -84,7 +93,7 @@
                 <div id="close-open-map" class="submit-button" style="max-width: fit-content;">Close Map</div>
                 <div id="find-my-location" class="submit-button" style="max-width: fit-content;">Find Where I Am</div>
                 <% if(entity.lat && entity.lng) { %>
-                <div id="open-google-maps" class="submit-button google-button" style="max-width: fit-content; "><img height="20px" src="/static/assets/icons/google-maps-svgrepo-com.svg">Open in Google Maps</div>
+                <div id="open-google-maps" class="submit-button google-button" style="max-width: fit-content; "><img src="/static/assets/icons/google-maps-svgrepo-com.svg">Google Maps</div>
                 <% } %>
             </div>
 
@@ -94,7 +103,7 @@
         </div>
 
         <!-- Entity Info -->
-        <div class="main-container">
+        <div class="main-container " style="flex: 1;">
             <div class="entity-card">
                 <section class="entity-main-info">
                     <div class="entity-card-title"><b><%= entity.entity_name %></b></div>
@@ -152,8 +161,12 @@
                         <div>created by &nbsp;<b onclick="window.location.href='/profile?userId=37'"><%= entity.username %></b> <img src="/static/assets/badges/explorer.jpg"></div>
                         <div class="review-button-container">
                             <img src="/static/assets/icons/thumb_up.svg" title="upvote">
+                            <span class="total-votes"><%= entity.total_votes %></span>
                             <img src="/static/assets/icons/thumb_down.svg" title="downvote">
-                            <button class="general-button" onclick="window.location.href='/entity?entityId=25'">Discover More</button>
+                            <% if (user && entity.username === user.username) { %>
+                            <button type="button" class="general-button" onclick="callModifyKnowledgePopup('<%= entity.entity_id %>','<%= entity.submitted_by %>')">Modify</button>
+                            <button type="button" class="general-button alert-action-button" onclick="create_prompt_message('Removing Entity','Are you sure you want to permanently remove this entity from the app?', 'closeMessageModal(); deleteEntity(<%= entity.entity_id%>)', 'Yes')">Delete</button>
+                            <% } %>
                         </div>
                     </div>
                 </section>
@@ -171,7 +184,7 @@
 <script>
     // Initialize the map
     var map = L.map('map', {
-        scrollWheelZoom: false
+        //scrollWheelZoom: false
     }).setView([0, 0], 2); // Default view, can be changed
 
     //map layers
@@ -344,8 +357,23 @@
         });
     }
 
+    // close/open map listener
+    document.getElementById('close-open-map').addEventListener("click", (e) => {
+        const map = document.querySelector('#map')
+        const mapContainer = document.querySelector('.map-container > div:nth-child(2)')
 
-
+        if (e.srcElement.innerText == "Close Map") {
+            map.classList.add("hidden")
+            mapContainer.style.position = 'relative'
+            dragElement.classList.add("hidden")
+            e.srcElement.innerText = "Open Map"
+        } else {
+            map.classList.remove("hidden")
+            mapContainer.style.position = 'absolute'
+            dragElement.classList.remove("hidden")
+            e.srcElement.innerText = "Close Map"
+        }
+    })
 </script>
 
 <!-- Drag Map New Code To Include Touchscreens -->
@@ -393,8 +421,7 @@
     }
 </script>
 
-<!-- Show All options if location exists or is selected -->
-
+<!-- Other Functions -->
 <script>
     var entity
     getEntity('<%= entity.entity_id %>')
@@ -425,6 +452,12 @@
             }
 
         })
+
+    function askDeletePrompt(id) {
+
+    }
 </script>
+
+
 
 </html>

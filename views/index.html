@@ -17,7 +17,7 @@
 
     <!-- Include geolocalization and other scripts -->
     <script src="/static/scripts/entitiesCards.js"></script>
-    <script src="/static/scripts/home.js"></script>
+
 
 
 </head>
@@ -32,7 +32,7 @@
             <div id="map" style="height: 50vh;"></div>
             <div class="map-button-container">
                 <div id="close-open-map" class="submit-button" style="max-width: fit-content;">Close Map</div>
-                <div id="add-spot-map" class="submit-button" style="max-width: fit-content;">Add Spot on Map</div>
+                <div id="add-spot-map" class="submit-button hidden" style="max-width: fit-content;">Add Spot on Map</div>
             </div>
             <div id="drag-map" style="cursor: ns-resize; background-color: #333; text-align: center;">
                 <div></div>
@@ -40,33 +40,50 @@
         </div>
 
         <!-- Set Location -->
-        <div id="location-selection-wrapper" class="expand-container">
+
+        <div class="main-container ">
             <div>
                 <div id="show-city-name"></div>
             </div>
-            <h2>Select your Location</h2>
-            <div style="display: flex; justify-content: center;">
-                <div>
-                    <label for="countrysearch">Search a Country</label>
-                    <input id="countrysearch" type="text" list="country_suggestions">
-                    <datalist id="country_suggestions">
-                        <% allCountries.forEach((country)=>{ %>
-                        <option value="<%= country.name + ' - ' + country.isoCode %>" data_lat="<%= country.latitude %>" data_lng="<%= country.longitude %>"></option>
-                        <% }) %>
-                    </datalist>
-                </div>
-                <div id="city-search-wrapper" class="hidden">
-                    <label for="citysearch">Search for a Location</label>
-                    <input id="citysearch" type="text" list="city_suggestions">
-                    <datalist id="city_suggestions">
-                    </datalist>
+            <div class="top-index-options">
+
+                <div class="main-container expand-container" style="text-align: center;">
+                    <h2>Contribute with Local Knowledge</h2>
+                    <div style="text-align: center;">
+                        <button id="show-addentity-popup" class="submit-button">
+                            Add Local Knowledge
+                        </button>
+                    </div>
                 </div>
 
-                <div class="find-me">
-                    <span>or</span><button class="submit-button" id="find-my-location">Find Where I Am</button>
+                <div id="location-selection-wrapper" class="expand-container" style="flex: 1;">
+
+                    <h2>Select your Location</h2>
+                    <div style="display: flex; justify-content: center;">
+                        <div>
+                            <label class="hidden" for="countrysearch">Search a Country</label>
+                            <input id="countrysearch" type="text" list="country_suggestions" placeholder="Type & Select a Country">
+                            <datalist id="country_suggestions">
+                                <% allCountries.forEach((country)=>{ %>
+                                <option value="<%= country.name + ' - ' + country.isoCode %>" data_lat="<%= country.latitude %>" data_lng="<%= country.longitude %>"></option>
+                                <% }) %>
+                            </datalist>
+                        </div>
+                        <div id="city-search-wrapper" class="hidden">
+                            <label class="hidden" for="citysearch">Search for a Location</label>
+                            <input id="citysearch" type="text" list="city_suggestions" placeholder="Search for a Location">
+                            <datalist id="city_suggestions">
+                            </datalist>
+                        </div>
+
+                        <div class="find-me">
+                            <button class="submit-button" id="find-my-location">Find Where I Am</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
 
         <!-- Recent Knowledge Addtions -->
         <section class="hidden" style="text-align: center; background-color: #f4f4f4; ">
@@ -106,14 +123,7 @@
 
         <!-- Contribute to Geolocalknowledge -->
         <section>
-            <div class="main-container " style="text-align: center">
-                <h2>Contribute with Local Knowledge</h2>
-                <div class="main-container" style="text-align: center;">
-                    <button id="show-addentity-popup" class="submit-button">
-                        Add Local Knowledge
-                    </button>
-                </div>
-            </div>
+
         </section>
 
         <!-- Footer -->
@@ -270,7 +280,7 @@
         try {
             const closestCities = await fetchClosestCity(lat, lng);
 
-            document.getElementById("show-city-name").innerHTML = `You should be in <b>${closestCities[0].name}</b><br><br><button type='button' class='submit-button' id='set-location-button'>Set <b>${closestCities[0].name}</b> as your location</button>`
+            document.getElementById("show-city-name").innerHTML = `You should be in or near <b>${closestCities[0].name}</b><br><br><button type='button' class='submit-button' id='set-location-button'>Set <b>${closestCities[0].name}</b> as your location</button>`
 
             document.getElementById("set-location-button").addEventListener("click", () => {
                 setLocation(closestCities[0])
@@ -624,6 +634,9 @@
                 break;
             }
         }
+
+        // reset value od search location
+        document.getElementById("citysearch").value = ""
     });
 
     // Populate locations datalist
@@ -857,100 +870,6 @@
         return city || null;
     }
 
-
-    // Fetch Request to Add Entity 
-    async function submitNewEntityForm() {
-
-        const entityName = document.getElementById('entity-name').value;
-        const entityTag = document.getElementById('entity-tag').value.split(',').map(tag => tag.trim());
-        const phoneNumber = document.getElementById('contact-phone-number').value;
-        const email = document.getElementById('contact-email').value;
-        const website = document.getElementById('contact-website').value;
-        const review = document.querySelector('textarea[name="entity-review"]').value.trim();
-        const location = await JSON.parse(localStorage.getItem("location"))
-
-
-        var entityLatitutde = document.getElementById('entity-latitude') ? document.getElementById('entity-latitude').value : null;
-        var entityLongitude = document.getElementById('entity-longitude') ? document.getElementById('entity-longitude').value : null;
-
-        if (entityName == "") {
-            closeMessageModal()
-            return document.querySelector("#tag-error-message").innerText = "You need to add the Name of the service or spot"
-        }
-
-        // at least one entity tag required
-        if (entityTag == "") {
-            closeMessageModal()
-            return document.querySelector("#tag-error-message").innerText = "At least one tag must be added"
-        }
-
-        // at least one contact detail required
-        if (email == "" && phoneNumber == "" && website == "" && !entityLatitutde && !entityLongitude) {
-            closeMessageModal()
-            return document.querySelector("#contact-error-message").innerText = "At least one contact detail must be added, or coordinates must be present"
-        }
-
-        // create an object to send to server
-        const data = {
-            entityName: entityName,
-            entityTag: entityTag,
-            phoneNumber: phoneNumber,
-            email: email,
-            website: website,
-            review: review,
-            location: location.name,
-            locationLat: location.lat,
-            locationLng: location.lng,
-            lat: entityLatitutde,
-            lng: entityLongitude
-        };
-
-        const formData = new FormData();
-
-        // Get all selected files
-        const files = document.getElementById('entity-image').files;
-
-        // Append each file to FormData
-        for (const file of files) {
-            formData.append("images", file);
-        }
-
-        // Append the jsonData
-        formData.append("jsonData", JSON.stringify(data))
-
-        // show loading animation
-        document.querySelector(".loading-animation").style.display = "contents"
-
-        //hide message
-        document.querySelector(".prompt-message").style.display = "none"
-
-        // Use fetch API to send the data to the server
-        fetch('/createentity', {
-                method: 'POST',
-                body: formData,
-            })
-            .then(response => {
-                // close all previous message modals
-                closeMessageModal()
-                if (response.ok) response.json()
-                else if (response.status == 403) throw new Error("You need to be registered and logged in to add local knowledge")
-                else if (response.status >= 500) throw new Error("Ops! Something went wrong, it's not your fault it's ours and we will try to fix it as soon as possible.")
-            })
-            .then(data => {
-                console.log('Success:', data);
-                //Will need to create popup message to show success
-                create_success_message("Knowledge Created", "New Knowledge Added Successfully", "window.location.reload()")
-                //window.location.reload()
-            })
-            .catch((error) => {
-                console.error(error);
-                // Handle errors here, such as showing an error message to the user
-                create_alert_message("Attention", "Something went wrong:\n" + error)
-            });
-
-    }
-
-
     function showAllSections(location) {
 
         // Change the heading of section
@@ -970,6 +889,8 @@
         sections.forEach(section => {
             section.classList.remove("hidden")
         })
+
+        document.getElementById("add-spot-map").classList.remove("hidden")
     }
 
     // Populates a selected div with the entity cards based on the data

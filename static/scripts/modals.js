@@ -1,8 +1,3 @@
-/**
- * @param {*} title top header of the alert message
- * @param {*} message message to show in the alert message
- */
-
 function create_alert_message(title, message) {
 
     if (document.querySelector('.modal-message-container') == null) {
@@ -75,7 +70,6 @@ function create_success_message(title, message, action = null) {
         action = "closeMessageModal()"
     }
 
-    console.log(myaction);
 
     if (document.querySelector('.modal-message-container') == null) {
         let modal = document.createElement('div')
@@ -174,9 +168,9 @@ function createKnowledgePopup(location, includeCoord = false) {
         <h4>Coordinates</h4>
         <div>
             <label for="entity-latitude">latitude</label>
-            <input max="90" min="-90" step="0.0000000001" id="entity-latitude" type="number" name="entity-latitude" value="${location.lat}">
+            <input max="90" min="-90" step="0.00001" id="entity-latitude" type="number" name="entity-latitude" value="${location.lat}">
             <label for="entity-longitude">latitude</label>
-            <input max="90" min="-90" step="0.0000000001" id="entity-longitude" type="number" name="entity-longitude" value="${location.lng}">  
+            <input max="90" min="-90" step="0.00001" id="entity-longitude" type="number" name="entity-longitude" value="${location.lng}">  
         </div>
         `
     }
@@ -186,7 +180,7 @@ function createKnowledgePopup(location, includeCoord = false) {
             <div class="add-knowledge-inner-wrapper">
                 
                 <form id="create-entity" action="/createentity" method="post">
-                    <div>
+                    <div class="knowledge-form-title">
                         <h2>Add Local Knowledge to ${location.name}</h2>
                         <button class="close-popup" type="button">×</button>
                     </div>
@@ -242,12 +236,12 @@ function createKnowledgePopup(location, includeCoord = false) {
                             <img src="/static/assets/icons/place_item.svg">
                             <span class="choose-file"><b>Choose your files</b> or drag them here</span>
                             <input id="entity-image" name="image" type="file" accept="image/*" multiple>
-                            <div class="image-input-message" style="font-size: 0.8em;">max 5 files</div>
+                            <div class="image-input-message" style="font-size: 0.8em;">max 10 files</div>
                         </label>
                     </div>
 
                     <h4>Review</h4>
-                    <textarea name="entity-review" id="" cols="30" rows="10" maxlength="500" style="width: 350px" value=""></textarea>
+                    <textarea name="entity-review" id="" cols="30" rows="10" maxlength="1000" style="width: 350px" value="" placeholder="max 1000 characters"></textarea>
                     
                     <button id="entity-form-submit" type="button" class="submit-button">Add Entity</button>
                 </form>
@@ -258,13 +252,13 @@ function createKnowledgePopup(location, includeCoord = false) {
 
     //const entityForm = section.querySelector('form')
 
-    // Add the event listener
+
 
     section.querySelector("#entity-form-submit").addEventListener("click", () => {
         create_prompt_message(
             "Attention",
             `You are creating a new entity and possibly sharing sensitive data.\nPlease confirm that you have obtained permission from the owner of the data to share this information.`,
-            "submitNewEntityForm()",
+            "submitEntityForm('new')",
             "Confirm"
         )
     })
@@ -329,6 +323,207 @@ function createKnowledgePopup(location, includeCoord = false) {
     callDragAndDrop(section)
 }
 
+// Creates the popup window t add local knowledge
+function createModifyKnowledgePopup(entity, userId) {
+;
+    //to stop duplicate popups
+    const popup = document.querySelector(".add-knowledge-popup")
+    if (popup || !entity) return
+
+    //create container
+    const section = document.createElement('section')
+    const body = document.querySelector('body')
+
+    section.classList.add('add-knowledge-popup')
+
+    let coordString = ""
+    if (entity.lat && entity.lng) {
+        coordString = `
+        <h4>Coordinates</h4>
+        <div>
+            <label for="entity-latitude">latitude</label>
+            <input max="90" min="-90" step="0.00001" id="entity-latitude" type="number" name="entity-latitude" value="${convertNullToEmptyString(entity.lat)}">
+            <label for="entity-longitude">latitude</label>
+            <input max="90" min="-90" step="0.00001" id="entity-longitude" type="number" name="entity-longitude" value="${convertNullToEmptyString(entity.lng)}">  
+        </div>
+        `
+    }
+
+    section.innerHTML =
+        `<section class="add-knowledge-popup">
+            <div class="add-knowledge-inner-wrapper">
+                
+                <form id="create-entity" action="/createentity" method="post">
+                    <input id="update-form-entityId" class="hidden" type="text" value='${entity.entity_id}'>
+                    <div class="knowledge-form-title">
+                        <h2>Change Information of ${entity.entity_name}</h2>
+                        <button class="close-popup" type="button">×</button>
+                    </div>
+ 
+                    <div>
+                        <label for="entity-name">Name of Service or Spot</label>
+                        <input id="entity-name" name="entity-name" type="text" required value="${entity.entity_name}">
+                    </div>
+                    
+                    <div>
+                        <label for="entity-tag">Add one or more tags, you can separate tags with a coma ","</label>
+                        <input id="entity-tag" type="text" name="entity-tag">
+                        <div class="inputed-tags-container"></div>
+                        <div class="inputed-tags-error"></div>
+                    </div>
+                    <div>
+                        <!--b>attached Tags:</b>
+                        <div id="attached-tags"></div-->
+                        <div class="form-error-message" id="tag-error-message"></div>
+                    </div>
+                    ${coordString}
+                    <h4>Contact Information</h4>
+                    <div class="form-error-message" id="contact-error-message"></div>
+                    <div>
+                        <div>
+                            <label for="contact-phone-number">Phone Number</label>
+                            <input id="contact-phone-number" type="tel" name="contact-phone-number" value="${convertNullToEmptyString(entity.phone_numbers)}">
+                            
+                            <div hidden>
+                                <button type="button" class="submit-button plus-button"><b>+</b></button> Add another phone number
+                            </div>
+
+                        </div>
+                        <div>
+                            <label for="contact-email">Email</label>
+                            <input id="contact-email" type="email" name="contact-email" value="${convertNullToEmptyString(entity.emails)}">   
+                            <div hidden><button type="button" class="submit-button plus-button"><b>+</b></button> Add another email</div>
+
+                        </div>
+                        <div>
+                            <label for="contact-website">Website</label>
+                            <input id="contact-website" type="url" name="contact-website" value="${convertNullToEmptyString(entity.websites)}">
+                            
+                            <div hidden><button type="button" class="submit-button plus-button"><b>+</b></button> Add another website</div>
+                        </div>
+                    </div>
+                    <h4>Add more Images</h4>
+                    
+                    <div class="file-upload">
+                        <label for="entity-image" class="file-upload-label">
+                            <img src="/static/assets/icons/place_item.svg">
+                            <span class="choose-file"><b>Choose your files</b> or drag them here</span>
+                            <input id="entity-image" name="image" type="file" accept="image/*" multiple>
+                            <div class="image-input-message" style="font-size: 0.8em;">max 10 files</div>
+                        </label>
+                    </div>
+
+                    <h4>Review</h4>
+                    <textarea name="entity-review" id="" cols="30" rows="10" maxlength="1000" style="width: 350px" placeholder="max 1000 characters">${convertNullToEmptyString(findReviewTextByUserId(entity.reviews, userId))}</textarea>
+                    <button id="entity-form-submit" type="button" class="submit-button">Modify Knowledge</button>
+                </form>
+            </div>
+        </section>`
+
+    body.appendChild(section)
+
+    //const entityForm = section.querySelector('form')
+
+    // Add the event listener
+
+    section.querySelector("#entity-form-submit").addEventListener("click", () => {
+        create_prompt_message(
+            "Attention",
+            `You are modifying a knowledge entity and possibly sharing sensitive data.\nPlease confirm that you have obtained permission from the owner of the data to share this information.`,
+            "submitEntityForm('update')",
+            "Confirm"
+        )
+    })
+
+    // On entering tags in the form show tag in the tags container of the form
+    section.querySelector('#entity-tag').addEventListener("input", (e) => {
+
+        const container = section.querySelector('.inputed-tags-container')
+        var tags = e.target.value.split(',')
+        var trimmedTags = []
+
+        //trim tags to have them orderly
+        tags.forEach(tag => {
+            const trimmedTag = tag.trim();
+            if (trimmedTag) {
+                trimmedTags.push(trimmedTag);
+            }
+        });
+        tags = trimmedTags
+
+        // check if tag is repeated
+        if (e.data == ",") {
+            let setTags = [...new Set(tags)]
+            if (setTags.length != tags.length) section.querySelector('.inputed-tags-error').innerHTML = "*tag already present"
+            tags = setTags
+        }
+
+        // check if more than 20 tags have been inputed
+        if (tags.length > 20) {
+            section.querySelector('.inputed-tags-error').innerHTML = "*20 tags max"
+        }
+        tags = tags.slice(0, 20)
+
+        // add the tags to the tags container
+        container.innerHTML = ""
+        tags.forEach(tag => {
+            container.innerHTML += `<div class="entity-tag">${tag.trim()}</div>`
+        })
+
+        // if comma then expect new word show all word in orderly manner inside input
+        if (e.data == ",") {
+            e.target.value = tags.join(', ') + e.data
+        }
+    })
+
+    // Set the value of the input element to the 'tags' property of the 'entity' object
+    section.querySelector('#entity-tag').value = entity.tags;
+
+    // Create a new input event and pass the 'entity.tags' value as a property
+    const inputEvent = new InputEvent('input', {
+        bubbles: true,
+        cancelable: true,
+        data: entity.tags, // Pass the 'entity.tags' value here
+    });
+
+    // Dispatch the input event on the input element
+    section.querySelector('#entity-tag').dispatchEvent(inputEvent);
+
+
+    section.querySelector('.close-popup').addEventListener("click", () => {
+
+
+        // Loop through child elements and remove event listeners by coning and replacing them
+        section.querySelectorAll('*').forEach(child => {
+            const clonedNode = child.cloneNode(true); // Clone the node to preserve its properties
+            child.replaceWith(clonedNode); // Replace the original node with the cloned one
+        });
+
+        section.remove()
+
+
+    })
+
+    // call the drag and rop scripts
+    callDragAndDrop(section)
+}
+
+// calls the 
+function callModifyKnowledgePopup(entityId, userId) {
+
+    try {
+        getEntity(entityId)
+            .then(entity => {
+                createModifyKnowledgePopup(entity, userId)
+            })
+    } catch (error) {
+        console.error(error);
+        closeMessageModal()
+        return create_alert_message("Attention", error)
+    }
+
+
+}
 
 function closeMessageModal() {
     document.querySelector('.modal-message-container').remove()
@@ -472,4 +667,30 @@ function showLoadingAnimation() {
     if (loadingAnimation) {
         loadingAnimation.style.display = 'block';
     }
+}
+
+
+// Function to find review text by submitted user ID
+function findReviewTextByUserId(data, userId) {
+    // Filter data where submitted_by matches userId
+
+
+
+    // check if it's array
+    if (!Array.isArray(data)) return null
+
+    const userReview = data.filter(item => item.submitted_by == userId);
+
+    // Map the filtered data to extract review text
+    if (userReview) {
+        const reviewText = userReview.map(item => item.review_text);
+        return reviewText;
+    } else {
+        return null
+    }
+}
+
+function convertNullToEmptyString(value) {
+    if (value === null) return ""
+    else return value
 }

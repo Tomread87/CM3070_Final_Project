@@ -26,13 +26,15 @@
 
 .icon-label.entity-icon > div > *{
     height: 60px;
-    border-radius: 30px;
+    border-radius: 60px;
     padding: 3px;
 }
 
 .icon-label.entity-icon {
     border-radius: 5% 50% 50% !important;
     border-width: 2px;
+    min-height: 15px;
+    min-width: 15px;
 }
 
 .map-entity-name {    
