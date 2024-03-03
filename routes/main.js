@@ -615,7 +615,7 @@ module.exports = function (app, db) {
                 for (let file of req.files) {
                     const fileInfo = await saveSharpScaledImages(file)
                     data.dbImages.push(fileInfo)
-                    deleteFile(file.path, 5000)
+                    // deleteFile(file.path, 5000) Error while deleting file: [Error: EPERM: operation not permitted, unlink
                 }
                 await db.addEntityToDatabase(data)
             } else {
@@ -695,7 +695,7 @@ module.exports = function (app, db) {
                 for (let file of req.files) {
                     const fileInfo = await saveSharpScaledImages(file)
                     data.dbImages.push(fileInfo)
-                    // deleteFile(file.path, 5000) eprom error can't delete temp files
+                    // deleteFile(file.path, 5000) Error while deleting file: [Error: EPERM: operation not permitted, unlink
                 }
                 await db.updateEntityInDatabase(data, entity[0])
             } else {

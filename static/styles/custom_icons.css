@@ -7,9 +7,12 @@
     text-align: center; 
     white-space: nowrap; 
     display: inline-block;
-    z-index: 1;
-    border: solid 2px var(--main-green);
+    border: solid 2px purple;
     
+}
+
+.city-marker {
+    border-color: var(--main-green) !important;
 }
 
 .custom-icon .icon-label {
@@ -35,6 +38,7 @@
     border-width: 2px;
     min-height: 15px;
     min-width: 15px;
+    border-color: var(--main-green)
 }
 
 .map-entity-name {    

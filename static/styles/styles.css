@@ -91,6 +91,10 @@ footer>div {
     flex-wrap: wrap;
 }
 
+.top-index-options > div {
+    min-width: 520px
+}
+
 .top-index-options  h2 {
     margin: 8px;
 }
@@ -220,14 +224,23 @@ input {
     text-align: center;
 }
 
+.country-selection {
+    display: flex; justify-content: center; flex-wrap: wrap;
+    gap: 8px;
+}
+
 #user-nav-menu a:hover {
     background-color: var(--main-green);
 }
 
 .find-me {
     display: flex;
-    flex-direction: column;
-    margin-left: 10px;
+    justify-content: center;
+    height: min-content;
+}
+
+.find-me > button {
+    width: fit-content;
 }
 
 .find-me>span {
@@ -260,7 +273,7 @@ input {
 .add-knowledge-inner-wrapper {
     margin: 20px;
     max-width: 370px;
-    max-height: 90%;
+    max-height: 80%;
     background-color: #fff;
     box-shadow: 0 0 5px #3333;
     overflow-y: auto;
@@ -268,6 +281,7 @@ input {
     font-size: 0.85em;
     border-radius: 8px;
     padding: 20px;
+    height: 100%;
 }
 
 .knowledge-form-title {
@@ -561,6 +575,18 @@ input {
 }
 
 
+@keyframes wiggle {
+    0% { transform: rotate(0deg); }
+    5% { transform: rotate(-2deg); }
+    10% { transform: rotate(2deg); }
+    15% { transform: rotate(-2deg); }
+    20% { transform: rotate(0deg); }
+    100% { transform: rotate(0deg); }
+}
+
+.wiggle {
+    animation: wiggle 2s ease-in-out infinite;
+}
 
 .inputed-tags-container {
     display: flex;
@@ -642,6 +668,16 @@ input {
     border-radius: 8px;
 }
 
+#welcome-message {
+    animation: modal-anim;
+    animation-duration: 2s;
+    animation-iteration-count: 1;
+}
+
+#welcome-message {
+    padding-bottom: 0;
+}
+
 @keyframes modal-anim {
     0% {
         opacity: 0;
@@ -655,10 +691,18 @@ input {
 
 
 
-@media screen and (max-width: 425px) {
+
+@media screen and (max-width: 740px) {
     .entity-card {
         min-width: auto;
-        flex: 1;
+        flex: none;
+        width: 100%;
+    }
+
+    .top-index-options > div{
+        flex: none;
+        min-width: auto;
+        width: 100%;
     }
 
     header {

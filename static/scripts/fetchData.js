@@ -320,24 +320,30 @@ async function submitEntityForm(type) {
 
     if (entityName == "") {
         closeMessageModal()
-        return document.querySelector("#tag-error-message").innerText = "You need to add the Name of the service or spot"
+        let mex = "You need to add the Name of the service, person, spot or a title to your knowledge"
+        create_alert_message("Attention", mex)
+        return document.querySelector("#tag-error-message").innerText = mex
     }
 
     // at least one entity tag required
     if (entityTag == "") {
         closeMessageModal()
-        return document.querySelector("#tag-error-message").innerText = "At least one tag must be added"
+        let mex = "At least one tag must be added"
+        create_alert_message("Attention", mex)
+        return document.querySelector("#tag-error-message").innerText = mex
     }
 
     // at least one contact detail required
     if (email == "" && phoneNumber == "" && website == "" && !entityLatitutde && !entityLongitude) {
         closeMessageModal()
-        return document.querySelector("#contact-error-message").innerText = "At least one contact detail must be added, or coordinates must be present"
+        let mex = "At least one contact detail must be added, or geogrpahic coordinates must be present, so that exploreers can have a reference and find out more about the knowledge"
+        create_alert_message("Attention", mex)
+        return document.querySelector("#contact-error-message").innerText = mex
     }
 
     if (!isValidLocation(location)) {
         closeMessageModal()
-        create_alert_message("No Location Selected", "<div style='text-align: left'>To proceed you need to select a location by:<br> - selecting one location with green borders on the map<br> - selecting from the list just below the map<br> - click on find where I am and then set the location</div>")
+        return create_alert_message("No Location Selected", "<div style='text-align: left'>To proceed you need to select a location by:<br> - selecting one location with green borders on the map<br> - selecting from the list just below the map<br> - click on find where I am and then set the location</div>")
     }
 
 
@@ -409,7 +415,6 @@ async function submitEntityForm(type) {
 
 }
 
-
 function isValidLocation(data) {
     // Check if data is an object and has the required properties
     if (typeof data === 'object' && data !== null) {
@@ -417,6 +422,21 @@ function isValidLocation(data) {
             // Check if lat and lng are valid numbers
             if (typeof data.lat === 'number' && !isNaN(data.lat) &&
                 typeof data.lng === 'number' && !isNaN(data.lng)) {
+                return true; // Data is valid
+            }
+        }
+    }
+    return false; // Data is invalid
+}
+
+function isValidLocationLong(data) {
+    // Check if data is an object and has the required properties
+    if (typeof data === 'object' && data !== null) {
+        if ('name' in data && 'latitude' in data && 'longitude' in data) {
+            // Check if lat and lng are valid numbers
+            console.log("second if");
+            if (typeof data.latitude === 'number' && !isNaN(data.latitude) &&
+                typeof data.longitude === 'number' && !isNaN(data.longitude)) {
                 return true; // Data is valid
             }
         }

@@ -14,7 +14,7 @@ function createCard(data) {
     const phone = data.phone_numbers ? `<div><img src="/static/assets/icons/phone_in_talk.svg"> ${data.phone_numbers}</div>` : ""
     const website = data.websites ? `<div><img src="/static/assets/icons/internet.svg"> <a class="entity-website" ref="#" onClick="window.open('${data.websites}', '_blank')">${data.websites}</a></div>` : ""
     const coordinates = data.lat ? `<div><img src="/static/assets/icons/coordinates.svg">
-        <a class="entity-coordinates" href="#map" onclick="goToLocation(map, ${data.lat}, ${data.lng}, 16); setMarker({lat: ${data.lat}, lng: ${data.lng}})">
+        <a class="entity-coordinates" href="#map" onclick="goToLocation(${data.lat}, ${data.lng}, 16); setMarker({lat: ${data.lat}, lng: ${data.lng}})">
             (lat: ${data.lat}, lng: ${data.lng})
         </a>
     </div>` : ""

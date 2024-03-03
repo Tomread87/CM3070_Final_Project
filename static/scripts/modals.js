@@ -186,7 +186,7 @@ function createKnowledgePopup(location, includeCoord = false) {
                     </div>
  
                     <div>
-                        <label for="entity-name">Name of Service or Spot</label>
+                        <label for="entity-name">Enter the name of service, person, spot or knowledge</label>
                         <input id="entity-name" name="entity-name" type="text" required>
                     </div>
                     
@@ -240,8 +240,8 @@ function createKnowledgePopup(location, includeCoord = false) {
                         </label>
                     </div>
 
-                    <h4>Review</h4>
-                    <textarea name="entity-review" id="" cols="30" rows="10" maxlength="1000" style="width: 350px" value="" placeholder="max 1000 characters"></textarea>
+                    <h4>Describe the Knowledge</h4>
+                    <textarea name="entity-review" id="" cols="30" rows="10" maxlength="1000" style="max-width: 350px; width: 100%;" value="" placeholder="max 1000 characters"></textarea>
                     
                     <button id="entity-form-submit" type="button" class="submit-button">Add Entity</button>
                 </form>
@@ -257,7 +257,7 @@ function createKnowledgePopup(location, includeCoord = false) {
     section.querySelector("#entity-form-submit").addEventListener("click", () => {
         create_prompt_message(
             "Attention",
-            `You are creating a new entity and possibly sharing sensitive data.\nPlease confirm that you have obtained permission from the owner of the data to share this information.`,
+            `You are creating a new entity and possibly sharing sensitive data.\nPlease confirm that the data is of public domain or that you have obtained permission from the owner of the data to share this information.`,
             "submitEntityForm('new')",
             "Confirm"
         )
@@ -361,7 +361,7 @@ function createModifyKnowledgePopup(entity, userId) {
                     </div>
  
                     <div>
-                        <label for="entity-name">Name of Service or Spot</label>
+                        <label for="entity-name">Enter the name of service, person, spot or knowledge</label>
                         <input id="entity-name" name="entity-name" type="text" required value="${entity.entity_name}">
                     </div>
                     
@@ -413,7 +413,7 @@ function createModifyKnowledgePopup(entity, userId) {
                         </label>
                     </div>
 
-                    <h4>Review</h4>
+                    <h4>Describe the Knowledge</h4>
                     <textarea name="entity-review" id="" cols="30" rows="10" maxlength="1000" style="width: 350px" placeholder="max 1000 characters">${convertNullToEmptyString(findReviewTextByUserId(entity.reviews, userId))}</textarea>
                     <button id="entity-form-submit" type="button" class="submit-button">Modify Knowledge</button>
                 </form>
@@ -429,7 +429,7 @@ function createModifyKnowledgePopup(entity, userId) {
     section.querySelector("#entity-form-submit").addEventListener("click", () => {
         create_prompt_message(
             "Attention",
-            `You are modifying a knowledge entity and possibly sharing sensitive data.\nPlease confirm that you have obtained permission from the owner of the data to share this information.`,
+            `You are modifying a knowledge entity and possibly sharing sensitive data.\nPlease confirm that the data is of public domain or that you have obtained permission from the owner of the data to share this information.`,
             "submitEntityForm('update')",
             "Confirm"
         )
