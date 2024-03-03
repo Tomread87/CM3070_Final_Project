@@ -263,7 +263,7 @@ module.exports = function (app, db) {
                 location.entities = [];
             });
 
-            // assing the entites tot he locations
+            // assing the entites to t he locations
             entities.forEach(entity => {
                 // Find the corresponding location
                 const correspondingLocation = closestLocations.find(location => location.name === entity.location);
@@ -278,6 +278,12 @@ module.exports = function (app, db) {
                     correspondingLocation.entities.push(entity);
                 }
             });
+
+             for (let location of closestLocations) {
+                if (location.entities.length > 0) {
+                    location.entities = await db.attachAddInfoToEntities(location.entities)
+                }
+            }
 
             return res.json(closestLocations);
         } else {

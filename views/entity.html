@@ -283,7 +283,7 @@
         //custom icon
         const customIcon = (entity) => {
 
-            const img = entity.images.length > 0 ? `<img src="${entity.images[0].thumbnail_location}">` : "";
+            const img = entity.images.length > 0 ? `<img src="${entity.images[0].thumbnail_location}">` : `<div class="custom-icon-initials">${(entity.entity_name.charAt(0).toUpperCase() + entity.entity_name.charAt(parseInt(entity.entity_name.length/2)-1).toUpperCase()).trim()}</div>`;
 
             return L.divIcon({
                 className: 'custom-icon', // Custom class for styling
@@ -428,7 +428,6 @@
     getEntity('<%= entity.entity_id %>')
         .then(data => {
             entity = data;
-            console.log(entity);
 
             // fin out if entity has it's own lat or lng otherwise use 
             const latlng = entity.lat && entity.lng ? {
@@ -453,10 +452,6 @@
             }
 
         })
-
-    function askDeletePrompt(id) {
-
-    }
 </script>
 
 

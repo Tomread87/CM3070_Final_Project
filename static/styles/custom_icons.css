@@ -27,10 +27,22 @@
     z-index: 1000 !important;
 }
 
-.icon-label.entity-icon > div > *{
-    height: 60px;
-    border-radius: 60px;
+.icon-label.entity-icon > div > img{
+    height: 58px;
+    border-radius: 3% 50% 50%;
+    border: solid;
     padding: 3px;
+}
+
+.custom-icon-initials {
+    height: 60px;
+    width: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 3em;
+    border: solid;
+    border-radius: 3% 50% 50%;
 }
 
 .icon-label.entity-icon {

@@ -156,6 +156,7 @@
     var findMeLayer = L.layerGroup().addTo(map);
     var clickLayer = L.layerGroup().addTo(map);
     var markersLayer = L.layerGroup().addTo(map);
+    var entityLayer = L.layerGroup().addTo(map);
     var addingSpot = false
     var currentLocation = null
 
@@ -166,6 +167,7 @@
         findMeLayer.clearLayers()
         clickLayer.clearLayers()
         markersLayer.clearLayers()
+        entityLayer.clearLayers()
     }
 
     // Add a tile layer
@@ -218,8 +220,8 @@
     async function setLocation(location) {
 
         let data
+        console.log(location, isValidLocationLong(location), isValidLocation(location));
 
-        console.log(location, isValidLocationLong(location));
         if (isValidLocationLong(location)) {
             data = await JSON.stringify({
                 name: location.name,
@@ -227,9 +229,11 @@
                 lng: location.longitude
             })
             localStorage.setItem('location', data)
+        } else if (isValidLocation(location)) {
+            console.log(location, "is valid", isValidLocation(location));
         } else {
             localStorage.clear('location')
-            return create_alert_message("Attention","Ops, Something went wrong please try to select a lcoation again.")
+            return create_alert_message("Attention", "Ops, Something went wrong please try to teload teh page and select a location again.")
         }
 
 
@@ -250,8 +254,8 @@
                 if (!response.ok) { // Check if the request was successful
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                const responseData = await response.json(); 
-                console.log('Success:', responseData); 
+                const responseData = await response.json();
+                console.log('Success:', responseData);
             } catch (error) {
                 console.error('Error posting location:', error); // Handle errors
             }
@@ -317,7 +321,6 @@
         }
     }
 
-
     // Function to add a marker on the map where the user clicks
     function manageMapCLick(e) {
 
@@ -352,7 +355,7 @@
     }
 
     // adds city markers from an array of cities
-    function addCityMarkers(array, centerLatLng = null) {
+    function addCityMarkers(array, centerLatLng = null, addEntityMarkers = false) {
 
 
         //custom icon
@@ -372,7 +375,7 @@
             }
 
             // get entites for each city if in map bound
-            if (isInMapBounds(cityLatLng)) { // show locations that are visible only on the map
+            if (isInMapBounds(cityLatLng, 1)) { // show locations that are visible only on the map
 
 
                 /*getEntities(city.name, 100)
@@ -389,11 +392,70 @@
                 })
                 markersLayer.addLayer(marker)
 
+                // add cool spots on the map
+                if (addEntityMarkers && city.entities.length > 0) {
+                    city.entities.forEach(entity => {
+                        if (entity.lat && entity.lng) {
+                            addEntityMarker(entity)
+                        }
+                    })
+                    
+                }
+
                 /*})*/
             }
         })
 
         setTimeout(addHoverEventListener, 2000)
+    }
+
+    // add entity markers
+    function addEntityMarker(entity) {
+
+        //custom icon
+        const customIcon = (entity) => {
+
+            const img = entity.images.length > 0 ? `<img src="${entity.images[0].thumbnail_location}">` : `<div class="custom-icon-initials">${(entity.entity_name.charAt(0).toUpperCase() + entity.entity_name.charAt(parseInt(entity.entity_name.length/2)-1).toUpperCase()).trim()}</div>`;
+
+            return L.divIcon({
+                className: 'custom-icon', // Custom class for styling
+                html: `
+        <div onclick="window.location.href='/entity?entityId=${entity.entity_id}'">   
+            <div class="icon-label entity-icon">
+                <div style="display: flex;">
+                    ${img}
+                </div>                
+            </div>
+            <div class="map-entity-name">
+                ${entity.entity_name}
+            </div>  
+        </div>
+        `, // HTML content for the icon
+                iconAnchor: [0, 0], // Anchor point of the icon to the marker
+            });
+        }
+
+        let latlng
+
+        if (entity.lat && entity.lng) latlng = {
+            lat: entity.lat,
+            lng: entity.lng
+        }
+        else latlng = {
+            lat: entity.city.latitude,
+            lng: entity.city.longitude
+        }
+
+
+        // create the custom marker 
+        const marker = L.marker(latlng, {
+            icon: customIcon(entity)
+        })
+
+        entityLayer.addLayer(marker)
+
+
+        addHoverEventListener()
     }
 
     // adds state markers from an array of states
@@ -514,8 +576,10 @@
         if (currentZoomLevel >= 11) {
             fetchClosestCity(center.lat, center.lng, 500)
                 .then(cities => {
-                    addCityMarkers(cities, center)
+                    addSpots = currentZoomLevel >= 14 ? true : false
+                    addCityMarkers(cities, center, addSpots)
                 });
+
         } else if (currentZoomLevel < 11 && currentZoomLevel >= 7) {
             fetchClosestStates(center.lat, center.lng, distanceToCorner, 100)
                 .then(states => {
@@ -558,9 +622,8 @@
     });
 
     map.on('moveend', () => {
-        if (!isZooming) {
-            populateMapEntities();
-        }
+        if (!isZooming) populateMapEntities();
+        
     });
 
     // check if coordinate is in bounds of visible map

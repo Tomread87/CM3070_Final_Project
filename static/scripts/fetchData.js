@@ -404,7 +404,9 @@ async function submitEntityForm(type) {
         .then(data => {
             console.log('Success:', data);
             //Will need to create popup message to show success
-            create_success_message("Knowledge Created", "New Knowledge Added Successfully", "window.location.reload()")
+            if (type == "update") create_success_message("Knowledge Updated", "Knowledge Updated Succesfully", "window.location.reload()")
+            else create_success_message("Knowledge Created", "New Knowledge Added Successfully", "window.location.reload()")
+            
             //window.location.reload()
         })
         .catch((error) => {
@@ -420,8 +422,8 @@ function isValidLocation(data) {
     if (typeof data === 'object' && data !== null) {
         if ('name' in data && 'lat' in data && 'lng' in data) {
             // Check if lat and lng are valid numbers
-            if (typeof data.lat === 'number' && !isNaN(data.lat) &&
-                typeof data.lng === 'number' && !isNaN(data.lng)) {
+            if (!isNaN(data.lat) &&
+                !isNaN(data.lng)) {
                 return true; // Data is valid
             }
         }
@@ -435,8 +437,8 @@ function isValidLocationLong(data) {
         if ('name' in data && 'latitude' in data && 'longitude' in data) {
             // Check if lat and lng are valid numbers
             console.log("second if");
-            if (typeof data.latitude === 'number' && !isNaN(data.latitude) &&
-                typeof data.longitude === 'number' && !isNaN(data.longitude)) {
+            if (!isNaN(data.latitude) &&
+                !isNaN(data.longitude)) {
                 return true; // Data is valid
             }
         }
