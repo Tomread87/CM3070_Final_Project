@@ -83,7 +83,7 @@ async function addEntityToDatabase(data) {
         // Process and insert tags
         for (let tag of data.entityTag) {
             let tagId;
-            tag = tag.trim()
+            tag = tag.toLowerCase().trim()
 
             // Check if tag already exists
             const [existingTag] = await connection.query('SELECT tag_id FROM tags WHERE tag_name = ?', [tag]);
@@ -178,7 +178,7 @@ async function updateEntityInDatabase(data, orEntity) {
             // Process and insert tags
             for (let tag of data.entityTag) {
                 let tagId;
-                tag = tag.trim();
+                tag = tag.toLowerCase().trim();
 
                 // Check if tag already exists
                 const [existingTag] = await connection.query('SELECT tag_id FROM tags WHERE tag_name = ?', [tag]);

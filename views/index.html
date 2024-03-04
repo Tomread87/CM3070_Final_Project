@@ -321,22 +321,9 @@
         }
     }
 
-    // Function to add a marker on the map where the user clicks
+    // Function to create a marker when the users
     function manageMapCLick(e) {
 
-        /*if (!addingSpot) {
-            clearAllLayers()
-
-            // Create a marker and popup
-            var marker = L.marker(e.latlng)
-            marker.bindPopup("You clicked the map at " + e.latlng.toString()).openPopup();
-
-            clickLayer.addLayer(marker)
-
-            fetchClosestCity(e.latlng.lat, e.latlng.lng, 30).then(cities => {
-                addCityMarkers(cities, e.latlng)
-            });
-        } else */
         if (addingSpot) {
             fetchClosestCity(e.latlng.lat, e.latlng.lng, 1).then(cities => {
                 const input = {
@@ -356,7 +343,6 @@
 
     // adds city markers from an array of cities
     function addCityMarkers(array, centerLatLng = null, addEntityMarkers = false) {
-
 
         //custom icon
         const customIcon = (htmlText, cityName, lat, lng, zoom) => {
@@ -399,7 +385,7 @@
                             addEntityMarker(entity)
                         }
                     })
-                    
+
                 }
 
                 /*})*/
@@ -623,7 +609,7 @@
 
     map.on('moveend', () => {
         if (!isZooming) populateMapEntities();
-        
+
     });
 
     // check if coordinate is in bounds of visible map
@@ -843,6 +829,15 @@
             document.querySelector('.map-container').classList.remove("custom-cursor-pin")
         }
     })
+
+    // add listener to window resize so that the map is always scrollable
+    window.addEventListener("resize", () => {
+        const mapElement = document.getElementById("map");
+        const windowHeight = window.innerHeight - 74;
+        const mapBottom = mapElement.getBoundingClientRect().bottom - 67;
+        const newHeight = Math.min(windowHeight, mapBottom);
+        mapElement.style.height = newHeight + "px";
+    })
 </script>
 
 <!-- Drag Map New Code To Include Touchscreens -->
@@ -867,9 +862,9 @@
             let newY = e.clientY || e.touches[0].clientY; // Get the current Y coordinate
             // Calculate the new height based on the drag
             let newHeight = startHeight + (newY - startY);
-            // Ensure the new height is within the bounds of 100px and 80vh
+            // Ensure the new height is within the bounds of 100px and 100vh
             const minHeight = 100; // Minimum height in pixels
-            const maxHeight = 0.8 * window.innerHeight; // Maximum height (80vh)
+            const maxHeight = window.innerHeight - 74; // Maximum height (80vh)
             newHeight = Math.max(minHeight, Math.min(newHeight, maxHeight));
             mapElement.style.height = `${newHeight}px`;
         }

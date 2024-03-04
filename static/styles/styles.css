@@ -144,7 +144,6 @@ input {
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    width: 100%;
     max-width: 360px;
     text-align: center;
     border: solid 1px var(--main-green);
@@ -240,7 +239,9 @@ input {
 }
 
 .find-me > button {
+    width: -moz-fit-content;
     width: fit-content;
+
 }
 
 .find-me>span {
@@ -336,8 +337,7 @@ input {
 }
 
 .review-button-container img:hover {
-    scale: 1.1;
-
+    transform: scale(1.1);
 
 }
 
@@ -376,6 +376,7 @@ input {
     flex-direction: column;
     min-width: 340px;
     transition: 0.15s ease-in-out;
+    word-break: break-word;
 }
 
 .contact-info-title {
@@ -476,7 +477,7 @@ input {
 }
 
 .entity-tag-selection:hover {
-    scale: 1.01;
+    transform: scale(1.01);
     opacity: 0.9;
     background-color: var(--main-green)55;
 }

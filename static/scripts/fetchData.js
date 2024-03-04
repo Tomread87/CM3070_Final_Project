@@ -307,7 +307,7 @@ async function submitEntityForm(type) {
     if (type != 'new' && type != 'update') return console.error("missing parameter type, it should be either new or update")
 
     const entityName = document.getElementById('entity-name').value;
-    const entityTag = document.getElementById('entity-tag').value.split(',').map(tag => tag.trim());
+    const entityTag = document.getElementById('entity-tag').value.toLowerCase().split(',').map(tag => tag.trim());
     const phoneNumber = document.getElementById('contact-phone-number').value;
     const email = document.getElementById('contact-email').value;
     const website = document.getElementById('contact-website').value;

@@ -153,17 +153,18 @@
                     <b style="font-size: 1.2em;">Media</b>
                     <div class="media-container">
                         <% if (entity.images && entity.images.length > 0) { entity.images.forEach(image => { %>
-                        <img data-id="<%= image.id %>" data-owner="<%= image.uploaded_by %>" src="<%= image.thumbnail_location %>" data-original="<%= image.original_location %>" onclick="openModal(this)">
+                        <img data-id="<%= image.id %>" data-owner="<%= image.uploaded_by %>" src="<%= image.thumbnail_location %>" data-original="<%= image.original_location %>" alt="<%= image.original_name %>" onclick="openModal(this)">
                         <% })} %>
                     </div>
 
                     <div class="created-by-container">
-                        <div>created by &nbsp;<b onclick="window.location.href='/profile?userId=37'"><%= entity.username %></b> <img src="/static/assets/badges/explorer.jpg"></div>
+                        <div>created by &nbsp;<b onclick="window.location.href='/profile?userId=<%= entity.submitted_by %>'"><%= entity.username %></b> <img src="/static/assets/badges/explorer.jpg"></div>
                         <div class="review-button-container">
                             <img src="/static/assets/icons/thumb_up.svg" title="upvote">
                             <span class="total-votes"><%= entity.total_votes %></span>
                             <img src="/static/assets/icons/thumb_down.svg" title="downvote">
-                            <% if (user && entity.username === user.username) { %>
+                            <% if (user && entity.username === user.username) {  %>
+                                
                             <button type="button" class="general-button" onclick="callModifyKnowledgePopup('<%= entity.entity_id %>','<%= entity.submitted_by %>')">Modify</button>
                             <button type="button" class="general-button alert-action-button" onclick="create_prompt_message('Removing Entity','Are you sure you want to permanently remove this entity from the app?', 'closeMessageModal(); deleteEntity(<%= entity.entity_id%>)', 'Yes')">Delete</button>
                             <% } %>

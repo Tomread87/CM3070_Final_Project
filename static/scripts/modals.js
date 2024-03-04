@@ -325,7 +325,7 @@ function createKnowledgePopup(location, includeCoord = false) {
 
 // Creates the popup window t add local knowledge
 function createModifyKnowledgePopup(entity, userId) {
-;
+    ;
     //to stop duplicate popups
     const popup = document.querySelector(".add-knowledge-popup")
     if (popup || !entity) return
@@ -613,13 +613,26 @@ function callDragAndDrop(section, max = 10) {
                 }
             }
 
-            // All checks passed, handle files here
+            // All checks passed, handle files
+            // Show message in the uplaed window    
             for (const file of files) {
-                console.log("File selected:", file.name);
-
                 section.querySelector(".image-input-message").innerHTML = `${files.length} loaded - ${totalSizeInMB.toPrecision(2)}MB`
                 // Handle each file here
             }
+
+
+            // Create a new FileList containing the existing files and the new ones
+            const updatedFileList = new DataTransfer();
+            for (const file of fileInput.files) {
+                updatedFileList.items.add(file);
+            }
+            for (const file of files) {
+                updatedFileList.items.add(file);
+            }
+
+            // Assign the updated FileList to the file input element
+            fileInput.files = updatedFileList.files;
+            // Set the value of the input element to the names of the dragged files
         }
     }
 }
