@@ -1,6 +1,8 @@
 const { query, body, matchedData, validationResult } = require('express-validator');
 const { allWorldCities } = require('../serverside_scripts/cities.js')
 
+const maxTextAreaChars = 1000
+
 // validates form for register post request
 const validateRegistration = [
     body('username').notEmpty().isLength({ max: 64 }).trim().escape(),
@@ -47,7 +49,7 @@ const validateCreateEntity = [
     body('phoneNumber').optional({ checkFalsy: true }).isMobilePhone().withMessage('Invalid phone number'),
     body('email').optional({ checkFalsy: true }).isEmail().withMessage('Invalid email address'),
     body('website').optional({ checkFalsy: true }).isURL().withMessage('Invalid website URL'),
-    body('review').optional({ checkFalsy: true }).isLength({ max: 500 }).withMessage('Review must be less than 500 characters'),
+    body('review').optional({ checkFalsy: true }).isLength({ max: maxTextAreaChars }).withMessage('Review must be less than 500 characters'),
     // custom validator for at least one contact detail
     body().custom(data => {
         if (!data.email && !data.phoneNumber && !data.website && (!data.lat || !data.lng)) {
@@ -94,6 +96,32 @@ const validateCreateEntity = [
         }
         return true;
     }),
+    // setting custom throw errors to manage approppriate message
+    body('images').optional().custom((value, { req }) => {
+        // Check if any files were uploaded
+        if (!req.files || req.files.length === 0) {
+            // No files uploaded, validation passes
+            return true;
+        }
+
+        // Check if all uploaded files are images
+        const allImages = req.files.every(file => file.mimetype.startsWith('image/'));
+
+        if (!allImages) {
+            // At least one file is not an image, throw an error
+            throw new Error('Please upload only image files');
+        }
+
+        // All uploaded files are images, validation passes
+        return true;
+    }),
+
+];
+
+// validates the create entity data from the post request
+const validateAddReview = [
+    body('entityId').isInt({ min: 1 }).withMessage('an entityId is required to view this page'),
+    body('review').optional({ checkFalsy: true }).isLength({ max: maxTextAreaChars }).withMessage('Review must be less than 500 characters'),
     // setting custom throw errors to manage approppriate message
     body('images').optional().custom((value, { req }) => {
         // Check if any files were uploaded
@@ -328,5 +356,6 @@ module.exports = {
     validateProfile,
     validateEntity,
     validateChangeProfileImage,
-    validateVoteEntity
+    validateVoteEntity,
+    validateAddReview
 }

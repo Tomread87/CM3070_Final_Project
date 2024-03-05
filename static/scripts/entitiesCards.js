@@ -19,7 +19,26 @@ function createCard(data) {
         </a>
     </div>` : ""
 
-    const review = data.reviews.length > 0 ? data.reviews[0].review_text : "No description at this moment"
+    let reviews = ""
+    if (data.reviews.length > 0) {
+        let maxValues = Math.min(5, data.reviews.length)
+
+        for (let i = 0; i < maxValues; i++) {
+            let review = data.reviews[i]
+            reviews += `
+            <div class="entityreview">
+                <div class="review-text">${ review.review_text }</div>
+                <div class="review-by">
+                    written by &nbsp;<b onclick="window.location.href='/profile?userId=${ review.submitted_by }'">${ review.username }</b><img class="review-badge" src="/static/assets/badges/${ review.badge }" alt="badge - ${ review.badge }">
+                </div>
+            </div>
+            `
+        }
+    } else {
+        reviews = "No description at this moment"
+    }
+
+    
     let imagesView = ""
 
     if (data.images) {
@@ -45,7 +64,7 @@ function createCard(data) {
         </section>
         <section class="card-media-and-creator">
             <div class="entity-card-review">                
-                ${review}
+                ${reviews}
             </div>
             ${imagesView}
            

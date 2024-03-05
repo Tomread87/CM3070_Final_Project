@@ -28,7 +28,7 @@
         }
 
         .entityreview {
-            max-width: 300px;
+            /*max-width: 300px;*/
             border: dotted 1px green;
             min-width: 150px;
             padding: 4px 6px;
@@ -87,23 +87,23 @@
         <%- include('./templates/header.ejs')  %>
 
         <!-- Create a div to hold the map -->
-        <div class="map-container" style="position: relative; ">
-            <div id="map" style="height: 40vh;"></div>
+        <div class="map-container">
+            <div id="map"></div>
             <div class="map-button-container">
-                <div id="close-open-map" class="submit-button" style="max-width: fit-content;">Close Map</div>
-                <div id="find-my-location" class="submit-button" style="max-width: fit-content;">Find Where I Am</div>
+                <div id="close-open-map" class="submit-button">Close Map</div>
+                <div id="find-my-location" class="submit-button">Find Where I Am</div>
                 <% if(entity.lat && entity.lng) { %>
-                <div id="open-google-maps" class="submit-button google-button" style="max-width: fit-content; "><img src="/static/assets/icons/google-maps-svgrepo-com.svg">Google Maps</div>
+                <div id="open-google-maps" class="submit-button google-button"><img src="/static/assets/icons/google-maps-svgrepo-com.svg" alt="google maps svg">Google Maps</div>
                 <% } %>
             </div>
 
-            <div id="drag-map" style="cursor: ns-resize; background-color: #333; text-align: center;">
+            <div id="drag-map">
                 <div></div>
             </div>
         </div>
 
         <!-- Entity Info -->
-        <div class="main-container " style="flex: 1;">
+        <div class="main-container flex1">
             <div class="entity-card">
                 <section class="entity-main-info">
                     <div class="entity-card-title"><b><%= entity.entity_name %></b></div>
@@ -115,16 +115,16 @@
                     </div>
                     <div class="entity-contact-info">
                         <% if (entity.websites) { let websites = entity.websites.split(","); websites.forEach(website => { %>
-                        <div><img src="/static/assets/icons/internet.svg"><a class="entity-website" ref="#" onclick="window.open('<%= website %>', '_blank')"><%= website %></a></div>
+                        <div><img src="/static/assets/icons/internet.svg" alt="internet icon svg"><a class="entity-website" ref="#" onclick="window.open('<%= website %>', '_blank')"><%= website %></a></div>
                         <% })} %>
                         <% if (entity.phone_numbers) { let phone_numbers = entity.phone_numbers.split(","); phone_numbers.forEach(phone_number => { %>
-                        <div><img src="/static/assets/icons/phone_in_talk.svg"><%= phone_number %> </div>
+                        <div><img src="/static/assets/icons/phone_in_talk.svg" alt="phone icon svg"><%= phone_number %> </div>
                         <% })} %>
                         <% if (entity.emails) { let emails = entity.emails.split(","); emails.forEach(email => { %>
-                        <div><img src="/static/assets/icons/email.svg"><%= email %> </div>
+                        <div><img src="/static/assets/icons/email.svg" alt="email icon svg"><%= email %> </div>
                         <% })} %>
                         <% if (entity.lat && entity.lng) { %>
-                        <div><img src="/static/assets/icons/coordinates.svg">
+                        <div><img src="/static/assets/icons/coordinates.svg" alt="position icon svg">
                             <a class="entity-coordinates" href="#map">
                                 (lat: <%= entity.lat %>, lng: <%= entity.lng %>)
                             </a>
@@ -133,13 +133,13 @@
                     </div>
                 </section>
                 <section class="card-media-and-creator">
-                    <b style="font-size: 1.2em;">What Users Said</b>
+                    <b class="entity-mini-title">What Users Said</b>
                     <div class="entity-card-review">
                         <% if (entity.reviews.length > 0) { let reviews = entity.reviews; reviews.forEach(review => { %>
                         <div class="entityreview">
                             <div class="review-text"><%= review.review_text %></div>
                             <div class="review-by">
-                                written by &nbsp;<b onclick="window.location.href='/profile?userId=<%= review.submitted_by %>'"><%= review.username %></b><img class="review-badge" src="/static/assets/badges/<%= review.badge %>">
+                                written by &nbsp;<b onclick="window.location.href='/profile?userId=<%= review.submitted_by %>'"><%= review.username %></b><img class="review-badge" src="/static/assets/badges/<%= review.badge %>" alt="badge - <%= review.badge %>">
                             </div>
                         </div>
                         <% })} else { %>
@@ -149,8 +149,9 @@
                         </div>
                         <% } %>
                     </div>
+
                     <br>
-                    <b style="font-size: 1.2em;">Media</b>
+                    <b class="entity-mini-title">Media</b>
                     <div class="media-container">
                         <% if (entity.images && entity.images.length > 0) { entity.images.forEach(image => { %>
                         <img data-id="<%= image.id %>" data-owner="<%= image.uploaded_by %>" src="<%= image.thumbnail_location %>" data-original="<%= image.original_location %>" alt="<%= image.original_name %>" onclick="openModal(this)">
@@ -158,15 +159,20 @@
                     </div>
 
                     <div class="created-by-container">
-                        <div>created by &nbsp;<b onclick="window.location.href='/profile?userId=<%= entity.submitted_by %>'"><%= entity.username %></b> <img src="/static/assets/badges/explorer.jpg"></div>
+                        <div>created by &nbsp;<b onclick="window.location.href='/profile?userId=<%= entity.submitted_by %>'"><%= entity.username %></b> <img src="/static/assets/badges/<%= entity.badge %>" alt="badge - <%= entity.badge %>"></div>
                         <div class="review-button-container">
-                            <img src="/static/assets/icons/thumb_up.svg" title="upvote">
+                            <img src="/static/assets/icons/thumb_up.svg" title="upvote" onclick="voteEntity('<%= entity.entity_id%>', 1, this)">
                             <span class="total-votes"><%= entity.total_votes %></span>
-                            <img src="/static/assets/icons/thumb_down.svg" title="downvote">
+                            <img src="/static/assets/icons/thumb_down.svg" title="downvote" onclick="voteEntity('<%= entity.entity_id%>', -1, this)">
                             <% if (user && entity.username === user.username) {  %>
-                                
                             <button type="button" class="general-button" onclick="callModifyKnowledgePopup('<%= entity.entity_id %>','<%= entity.submitted_by %>')">Modify</button>
                             <button type="button" class="general-button alert-action-button" onclick="create_prompt_message('Removing Entity','Are you sure you want to permanently remove this entity from the app?', 'closeMessageModal(); deleteEntity(<%= entity.entity_id%>)', 'Yes')">Delete</button>
+                            <% } else if (user && user.id) { %>
+                            <div class="write-review">
+                                <button type="button" onclick="callAddReviewForm('<%=entity.entity_id%>','<%=user.id%>')" class="general-button"><img src="/static/assets/icons/rate_review.svg" alt="rate review icon">
+                                    <div>Add your knowledge</div>
+                                </button>
+                            </div>
                             <% } %>
                         </div>
                     </div>

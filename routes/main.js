@@ -279,7 +279,7 @@ module.exports = function (app, db) {
                 }
             });
 
-             for (let location of closestLocations) {
+            for (let location of closestLocations) {
                 if (location.entities.length > 0) {
                     location.entities = await db.attachAddInfoToEntities(location.entities)
                 }
@@ -652,13 +652,13 @@ module.exports = function (app, db) {
             return res.status(400).json({ errors: errors.array() });
         }
 
-        
+
 
         // Access validated data
         const jsonData = JSON.parse(req.body.jsonData)
-        
+
         const data = {
-            entityName, entityTag, phoneNumber, email, website, review, 
+            entityName, entityTag, phoneNumber, email, website, review,
             lat, lng, entityId
         } = jsonData;
 
@@ -666,13 +666,13 @@ module.exports = function (app, db) {
         // get the entity that we want to update and check if the logged in user is actually the owner
         try {
             entity = await db.getEntity(data.entityId)
-            if (!entity.length>0) throw new Error("Entity was not found")
+            if (!entity.length > 0) throw new Error("Entity was not found")
             if (entity[0].submitted_by != user.id) throw new Error("current user is not owner of entity")
 
             entity = await db.attachAddInfoToEntities(entity)
         } catch (error) {
             console.log(error);
-            return res.status(404).send({errors: "entity not found, please reload the page"})
+            return res.status(404).send({ errors: "entity not found, please reload the page" })
         }
 
 
@@ -753,6 +753,73 @@ module.exports = function (app, db) {
 
 
     })
+
+    // adds an entity into the delete table
+    app.post("/addreview", requiredAuthenticatedToken, multerUpload.array('images', 10), validationParam.validateAddReview, async (req, res) => {
+
+        
+        const user = req.user
+        if (!user) return res.status(403).send({ error: "you need to login to create a new entity" })
+
+        // Check for validation errors       
+        const errors = validationResult(req.body.jsonData);
+        if (!errors.isEmpty()) {
+            console.log(errors);
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        // Access validated data
+        const jsonData = JSON.parse(req.body.jsonData)
+
+        const data = {
+            entityId, review
+        } = jsonData;
+
+        // add current userId
+        data.userId = user.id
+
+        let entity
+        
+        // get the entity that we want to update and check if the logged in user is actually the owner
+        try {
+            entity = await db.getEntity(data.entityId)
+            if (!entity.length > 0) throw new Error("Entity was not found")
+            entity = await db.attachAddInfoToEntities(entity)
+        } catch (error) {
+            console.log(error);
+            return res.status(404).send({ errors: error })
+        }
+
+        data.dbImages = []
+        //save files and update to database
+        try {
+            // Access uploaded files
+            if (req.files && req.files.length > 0) {
+
+                for (let file of req.files) {
+                    const fileInfo = await saveSharpScaledImages(file)
+                    data.dbImages.push(fileInfo)
+                    // deleteFile(file.path, 5000) Error while deleting file: [Error: EPERM: operation not permitted, unlink
+                }
+                await db.addReviewToDatabase(data, entity[0])
+            } else {
+                await db.addReviewToDatabase(data, entity[0])
+            }
+
+            return res.status(200).send({message: "knowledge added succesfully"})
+        } catch (error) {
+            console.log('createentity', error);
+            if (error.code === 'LIMIT_FILE_SIZE') {
+                res.status(400).json({ error: 'File size exceeds the limit of 10MB' });
+            } else {
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+        }
+
+        
+
+    })
+
 
     // we are using requiredAuthenticatedToken so tha multer will not save the temp file on the server
     app.post("/changeprofileimage", requiredAuthenticatedToken, multerUpload.single('image'), validationParam.validateChangeProfileImage, async (req, res) => {

@@ -63,10 +63,8 @@ function create_info_message(title, message, action = null) {
  */
 function create_success_message(title, message, action = null) {
     let body = document.body
-    let myaction = action
 
-
-    if (action === null) {
+    if (action == null) {
         action = "closeMessageModal()"
     }
 
@@ -84,7 +82,7 @@ function create_success_message(title, message, action = null) {
                 ${message}
                 <br>
                 <br>
-                <button class="general-button" onclick="${myaction}">Close</button>
+                <button class="general-button" onclick="${action}">Close</button>
             </div>`
         body.appendChild(modal)
         modal.classList.add('message-modal-anim')
@@ -141,7 +139,6 @@ function create_prompt_message(title, message, action, confirm_name = 'Ok') {
     }
 }
 
-
 // Creates the popup window t add local knowledge
 function createKnowledgePopup(location, includeCoord = false) {
 
@@ -182,7 +179,7 @@ function createKnowledgePopup(location, includeCoord = false) {
                 <form id="create-entity" action="/createentity" method="post">
                     <div class="knowledge-form-title">
                         <h2>Add Local Knowledge to ${location.name}</h2>
-                        <button class="close-popup" type="button">×</button>
+                        <button class="close-popup" type="button">&times</button>
                     </div>
  
                     <div>
@@ -241,7 +238,7 @@ function createKnowledgePopup(location, includeCoord = false) {
                     </div>
 
                     <h4>Describe the Knowledge</h4>
-                    <textarea name="entity-review" id="" cols="30" rows="10" maxlength="1000" style="max-width: 350px; width: 100%;" value="" placeholder="max 1000 characters"></textarea>
+                    <textarea name="entity-review" id="" rows="10" maxlength="1000" value="" placeholder="max 1000 characters"></textarea>
                     
                     <button id="entity-form-submit" type="button" class="submit-button">Add Entity</button>
                 </form>
@@ -325,7 +322,7 @@ function createKnowledgePopup(location, includeCoord = false) {
 
 // Creates the popup window t add local knowledge
 function createModifyKnowledgePopup(entity, userId) {
-    ;
+
     //to stop duplicate popups
     const popup = document.querySelector(".add-knowledge-popup")
     if (popup || !entity) return
@@ -353,13 +350,12 @@ function createModifyKnowledgePopup(entity, userId) {
         `<section class="add-knowledge-popup">
             <div class="add-knowledge-inner-wrapper">
                 
-                <form id="create-entity" action="/createentity" method="post">
+                <form id="create-entity" action="/updateentity" method="post">
                     <input id="update-form-entityId" class="hidden" type="text" value='${entity.entity_id}'>
                     <div class="knowledge-form-title">
-                        <h2>Change Information of ${entity.entity_name}</h2>
-                        <button class="close-popup" type="button">×</button>
+                        <button class="close-popup" type="button">&times</button>
                     </div>
- 
+                        <h2>Change Information of<br><b>${entity.entity_name}</b></h2>
                     <div>
                         <label for="entity-name">Enter the name of service, person, spot or knowledge</label>
                         <input id="entity-name" name="entity-name" type="text" required value="${entity.entity_name}">
@@ -414,7 +410,7 @@ function createModifyKnowledgePopup(entity, userId) {
                     </div>
 
                     <h4>Describe the Knowledge</h4>
-                    <textarea name="entity-review" id="" cols="30" rows="10" maxlength="1000" style="width: 350px" placeholder="max 1000 characters">${convertNullToEmptyString(findReviewTextByUserId(entity.reviews, userId))}</textarea>
+                    <textarea name="entity-review" id="" cols="30" rows="10" maxlength="1000" placeholder="max 1000 characters">${convertNullToEmptyString(findReviewTextByUserId(entity.reviews, userId))}</textarea>
                     <button id="entity-form-submit" type="button" class="submit-button">Modify Knowledge</button>
                 </form>
             </div>
@@ -508,7 +504,7 @@ function createModifyKnowledgePopup(entity, userId) {
     callDragAndDrop(section)
 }
 
-// calls the 
+// gets entity details and calls the modify knowledge form
 function callModifyKnowledgePopup(entityId, userId) {
 
     try {
@@ -525,17 +521,15 @@ function callModifyKnowledgePopup(entityId, userId) {
 
 }
 
-function closeMessageModal() {
-    document.querySelector('.modal-message-container').remove()
-}
-
+//creates a form to upload a single image
 function createSingleImageUploadForm() {
     var modal = document.createElement('div')
     modal.id = "imgModal"
     modal.classList.add("modal-overlay")
     modal.innerHTML = `
         <div class="modal-content">
-            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <!-- span class="close-modal" onclick="closeModal()">&times;</span-->
+            <button style="align-self: end" class="close-popup" type="button" onclick="closeModal()">&times</button>
             <div style="width: 100%; text-align: center; font-size: 1.3em; margin-bottom: 10px"><b>Change Profile Picture</b></div>
             <form id="profile-image-form" enctype="multipart/form-data" action="/changeprofileimage" method="POST">
                 <div class="file-upload">
@@ -551,6 +545,74 @@ function createSingleImageUploadForm() {
         </div>
     `
     document.body.appendChild(modal)
+
+    callDragAndDrop(modal, 1)
+}
+
+// gets entity info and creates teh add review form
+function callAddReviewForm(entityId, userId) {
+    try {
+        getEntity(entityId)
+            .then(entity => {
+                createAddReviewForm(entity, userId)
+            })
+    } catch (error) {
+        console.error(error);
+        closeMessageModal()
+        return create_alert_message("Attention", error)
+    }
+}
+
+// permits users to add more images and 
+function createAddReviewForm(entity, userId) {
+    var modal = document.createElement('div')
+    modal.id = "imgModal"
+    modal.classList.add("modal-overlay")
+    modal.innerHTML = `
+        <div class="modal-content add-review-modal">
+
+
+            <!-- span class="close-modal" onclick="closeModal()">&times;</span-->
+            <form id="profile-image-form" enctype="multipart/form-data" action="/addreview" method="POST">
+                <input id="addreview-form-entityId" name="entityId" class="hidden" type="text" value='${entity.entity_id}'>
+                <div class="close-form-container">
+                    <button class="close-popup" type="button" onclick="closeModal()">&times</button>
+                </div>
+
+                  
+                <div class="knowledge-form-title add-knowledge">
+                    <h2>Add knowledge to <br><b style="text-decoration: underline">${entity.entity_name}</b></h2>
+                </div>
+                <!-- Loading animation -->
+                <div class="loading-animation" style="display: none;">
+                    <img src="/static/assets/icons/spinner.gif">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                <div class="prompt-message"> 
+                <h4>Add Images</h4>
+                <div class="file-upload">
+                    <label for="entity-image" class="file-upload-label">
+                        <img src="/static/assets/icons/place_item.svg">
+                        <span class="choose-file"><b>Choose your files</b> or drag them here</span>
+                        <input id="entity-image" name="image" type="file" accept="image/*" multiple>
+                        <div class="image-input-message" style="font-size: 0.8em;">max 10 files</div>
+                    </label>
+                </div>
+                <h4>Describe the Knowledge</h4>
+                <textarea name="entity-review" id="" cols="30" rows="10" maxlength="1000" placeholder="max 1000 characters">${convertNullToEmptyString(findReviewTextByUserId(entity.reviews, userId))}</textarea>
+                <button style="margin-top: 10px" type="submit" class="submit-button">Submit</button>
+                </div>
+            </form>
+        </div>
+    `
+    document.body.appendChild(modal)
+
+    modal.querySelector("#profile-image-form").addEventListener("submit", (e) => {
+        e.preventDefault()
+        submitAddReviewForm()
+    })
 
     callDragAndDrop(modal, 1)
 }
@@ -615,29 +677,29 @@ function callDragAndDrop(section, max = 10) {
 
             // All checks passed, handle files
             // Show message in the uplaed window    
-            for (const file of files) {
-                section.querySelector(".image-input-message").innerHTML = `${files.length} loaded - ${totalSizeInMB.toPrecision(2)}MB`
-                // Handle each file here
-            }
+            section.querySelector(".image-input-message").innerHTML = `${files.length} loaded - ${totalSizeInMB.toPrecision(2)}MB`
 
 
-            // Create a new FileList containing the existing files and the new ones
-            const updatedFileList = new DataTransfer();
-            for (const file of fileInput.files) {
-                updatedFileList.items.add(file);
-            }
-            for (const file of files) {
-                updatedFileList.items.add(file);
-            }
 
-            // Assign the updated FileList to the file input element
-            fileInput.files = updatedFileList.files;
-            // Set the value of the input element to the names of the dragged files
+            if (fileInput.length == 0) {
+                // Create a new FileList containing the existing files and the new ones
+                const updatedFileList = new DataTransfer();
+                for (const file of fileInput.files) {
+                    updatedFileList.items.add(file);
+                }
+                for (const file of files) {
+                    updatedFileList.items.add(file);
+                }
+
+                // Assign the updated FileList to the file input element
+                fileInput.files = updatedFileList.files;
+                // Set the value of the input element to the names of the dragged files
+            }
         }
     }
 }
 
-
+// opens google maps in a new windows and sets navigation to lat and lng
 function openGoogleMaps(lat, lng) {
 
     console.log(lat, lng);
@@ -654,6 +716,7 @@ function openGoogleMaps(lat, lng) {
 
 }
 
+// open an iamge to fit hte window
 function openModal(img) {
     var modal = document.createElement('div')
     modal.id = "imgModal"
@@ -669,9 +732,16 @@ function openModal(img) {
     modalImg.src = img.getAttribute("data-original");
 }
 
+// clsoes teh iamge modal
 function closeModal() {
-    var modal = document.getElementById("imgModal");
-    modal.remove()
+    let modal = document.getElementById("imgModal");
+    if (modal) modal.remove()
+}
+
+// clsoes teh iamge modal
+function closeMessageModal() {
+    let modal = document.querySelector(".modal-message-container");
+    if (modal) modal.remove()
 }
 
 // Function to show the loading animation
@@ -682,12 +752,9 @@ function showLoadingAnimation() {
     }
 }
 
-
 // Function to find review text by submitted user ID
 function findReviewTextByUserId(data, userId) {
     // Filter data where submitted_by matches userId
-
-
 
     // check if it's array
     if (!Array.isArray(data)) return null

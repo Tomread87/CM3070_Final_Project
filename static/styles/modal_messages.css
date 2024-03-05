@@ -21,10 +21,10 @@
     text-align: center;
     z-index: 20;
     background: #fff;
-    width: 40%;
-    height: fit-content;
+    /*height: fit-content;*/
     max-width: 340px;
     padding: 26px;
+    margin: 0 20px;
     /*border: solid 2px var(--main-green);*/
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     border-radius: 8px;

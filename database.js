@@ -284,6 +284,60 @@ async function updateEntityInDatabase(data, orEntity) {
     }
 }
 
+//function to update an entity
+async function addReviewToDatabase(data, orEntity) {
+    // Get a connection from the pool
+    const connection = await pool.getConnection();
+
+    try {
+        // Begin transaction
+        await connection.beginTransaction();
+
+        // Update or create review
+        //find review owned by user
+        const userReview = orEntity.reviews.filter(item => item.submitted_by == data.userId)
+        const userReviewExists = userReview.length > 0;
+        data.review = data.review.trim()
+
+        if (data.review) {
+            if (userReviewExists) {
+                // Update review if it already exists
+                await connection.query('UPDATE entity_reviews SET review_text = ? WHERE review_id = ? and submitted_by = ?', [data.review, userReview[0].review_id, data.userId]);
+            } else {
+                // Insert new review if it doesn't exist
+                await connection.query('INSERT INTO entity_reviews (entity_id, review_text, submitted_by) VALUES (?, ?, ?)', [data.entityId, data.review, data.userId]);
+            }
+        } /*else if (data.review == "" && userReviewExists) {
+            // Delete review if it exists and incoming data is empty
+            await connection.query('DELETE from entity_reviews where review_id = ? and submitted_by = ?', [userReview[0].review_id, data.userId]);
+        }*/
+
+        // add image to upladed images table and link to entity
+        if (data.dbImages && data.dbImages.length > 0) {
+            for (const image of data.dbImages) {
+                const [imageResult] =
+                    await connection.query('INSERT INTO uploaded_images (original_name, original_location, thumbnail_location, uploaded_by) VALUES (?, ?, ?, ?);',
+                        [image.originalName, image.original_location, image.thumbnail_location, data.userId]);
+
+                const imageId = imageResult.insertId;
+
+                await connection.query('INSERT INTO image_knowledge_link (image_id, entity_id) VALUES (?, ?);',
+                    [imageId, entityId]);
+            }
+        }
+
+        // Commit transaction
+        await connection.commit();
+    } catch (error) {
+        // Rollback transaction on error
+        await connection.rollback();
+        throw error;
+    } finally {
+        // Release connection
+        connection.release();
+    }
+}
+
 //function to retirev entities from db, either all locations or a specified location
 async function getEntities(location = null, limit = 9, tags = []) {
     try {
@@ -958,5 +1012,6 @@ module.exports = {
     getReviewsFromEntities,
     changeProfileImage,
     saveOrUpdateVote,
-    deleteEntityToTable
+    deleteEntityToTable,
+    addReviewToDatabase
 } 

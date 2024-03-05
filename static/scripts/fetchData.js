@@ -307,7 +307,8 @@ async function submitEntityForm(type) {
     if (type != 'new' && type != 'update') return console.error("missing parameter type, it should be either new or update")
 
     const entityName = document.getElementById('entity-name').value;
-    const entityTag = document.getElementById('entity-tag').value.toLowerCase().split(',').map(tag => tag.trim());
+    let entityTag = document.getElementById('entity-tag').value.toLowerCase().split(',').map(tag => tag.trim());
+    entityTag = entityTag.filter(Boolean);
     const phoneNumber = document.getElementById('contact-phone-number').value;
     const email = document.getElementById('contact-email').value;
     const website = document.getElementById('contact-website').value;
@@ -398,7 +399,7 @@ async function submitEntityForm(type) {
             closeMessageModal()
             if (response.ok) response.json()
             else if (response.status == 403) throw new Error("You need to be registered and logged in to add local knowledge")
-            else if (response.status >= 400 && response.status <= 400) throw new Error("Something is wrong with the request")
+            else if (response.status >= 400 && response.status <= 499) throw new Error("Something is wrong with the request")
             else if (response.status >= 500) throw new Error("Ops! Something went wrong, it's not your fault it's ours and we will try to fix it as soon as possible.")
         })
         .then(data => {
@@ -416,6 +417,71 @@ async function submitEntityForm(type) {
         });
 
 }
+
+// Fetch Request to Add Entity 
+async function submitAddReviewForm() {
+    
+    
+    const review = document.querySelector('textarea[name="entity-review"]').value.trim();
+    const entityId = document.getElementById('addreview-form-entityId').value
+
+
+    // create an object to send to server
+    const data = {
+        review: review,
+        entityId: entityId
+    };
+
+    // Get all selected files
+    const files = document.getElementById('entity-image').files;
+
+    if (files.length == 0 && review == "") return create_alert_message("Attention","No review or images are detected")
+
+    const formData = new FormData();
+
+    // Append each file to FormData
+    for (const file of files) {
+        formData.append("images", file);
+    }
+
+    // Append the jsonData
+    formData.append("jsonData", JSON.stringify(data))
+
+    // show loading animation
+    document.querySelector(".loading-animation").style.display = "contents"
+
+    //hide message
+    document.querySelector(".prompt-message").style.display = "none"
+
+    const url = '/addreview'
+    
+
+    // Use fetch API to send the data to the server
+    fetch(url, {
+        method: 'POST',
+        body: formData,
+    })
+        .then(response => {
+            // close all previous message modals
+            if (response.ok) response.json()
+            else if (response.status == 403) throw new Error("You need to be registered and logged in to add local knowledge")
+            else if (response.status >= 400 && response.status <= 499) throw new Error("Something is wrong with the request")
+            else if (response.status >= 500) throw new Error("Ops! Something went wrong, it's not your fault it's ours and we will try to fix it as soon as possible.")
+        })
+        .then(data => {
+            console.log('Success:', data);
+            create_success_message("Knowledge Added", "Your Knowledge has been added successfully!", "window.location.reload()")
+            //window.location.reload()
+        })
+        .catch((error) => {
+            console.error(error);
+            // Handle errors here, such as showing an error message to the user
+            create_alert_message("Attention", "Something went wrong:\n" + error)
+        });
+
+}
+
+
 
 function isValidLocation(data) {
     // Check if data is an object and has the required properties

@@ -19,7 +19,9 @@ function getAllCitiesOfCountry(isoCode) {
 }
 
 // function to get all cities from the country-state-city library and cache it on the server
-function getAllCities() {
+function getAllCitiesAndStates() {
+
+
 
     const allCountries = Country.getAllCountries();
     const allStates = State.getAllStates();
@@ -37,27 +39,26 @@ function getAllCities() {
                 longitude: country.longitude,
             };
             allStates.push(newState);
-        }
-    }
-
-    // Check for states without cities
-    for (const state of allStates) {
-        const cities = City.getCitiesOfState(state.countryCode, state.isoCode);
-        if (cities.length === 0) {
             const newCity = {
-                name: state.name,
-                countryCode: state.countryCode,
-                stateCode: state.isoCode,
-                latitude: state.latitude,
-                longitude: state.longitude,
-                stateName: state.name,
-                countryName: Country.getCountryByCode(state.countryCode).name
+                name: newState.name,
+                countryCode: newState.countryCode,
+                stateCode: newState.isoCode,
+                latitude: newState.latitude,
+                longitude: newState.longitude,
+                stateName: newState.name,
+                countryName: Country.getCountryByCode(newState.countryCode).name
             };
-            allCities.push(newCity);
+
+            allCities.push(newCity)
         }
     }
 
-    return allCities;
+    // Filter out states without cities
+    const statesWithCities = allStates.filter(state => {
+        const cities = City.getCitiesOfState(state.countryCode, state.isoCode);
+        return cities.length > 0;
+    });
+    return [allCities, statesWithCities];
 }
 
 // function to return the differnece dstances between lat and long given 
@@ -175,8 +176,9 @@ function searchCityByNameStateCountry(cityName, stateCode, countryCode) {
 }
 
 //cache all cities
-const allWorldCities = getAllCities()
-
+const AllCitiesAndStates = getAllCitiesAndStates()
+const allWorldCities = AllCitiesAndStates[0]
+const allWorldStates = AllCitiesAndStates[1]
 
 
 

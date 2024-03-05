@@ -28,21 +28,28 @@
         <%- include('./templates/header.ejs')  %>
 
         <!-- Create a div to hold the map -->
-        <div class="map-container" style="position: relative; ">
-            <div id="map" style="height: 50vh;"></div>
+        <div class="map-container">
+            <div id="map"></div>
             <div class="map-button-container">
-                <div id="close-open-map" class="submit-button" style="max-width: fit-content;">Close Map</div>
-                <div id="add-spot-map" class="submit-button hidden" style="max-width: fit-content;">Add Spot on Map</div>
+                <div id="close-open-map" class="submit-button">Close Map</div>
+                <div id="add-spot-map" class="submit-button hidden">Add Spot On Map</div>
+                <div id="map-options-button" class="submit-button google-button"><img src="/static/assets/icons/gear.svg" alt="gear.svg"><span>Options</span></div>
             </div>
-            <div id="drag-map" style="cursor: ns-resize; background-color: #333; text-align: center;">
+            <div id="drag-map">
                 <div></div>
+            </div>
+            <div id="map-options" class="hidden">
+                <b>Options</b>
+                <div>
+                    <input id="withEntityOnly" type="checkbox"><label for="withEntityOnly">Show Locations With Knowledge Only</label>
+                </div>
             </div>
         </div>
 
         <!-- Set Location -->
 
         <div class="main-container expand-container">
-            <div id="welcome-message" class="main-container expand-container" style="text-align: center; max-width: 1000px; font-size: 1em;">
+            <div id="welcome-message" class="main-container expand-container">
                 Hello and welcome to Geolocalknowledge! 🌍 Get ready to embark on an exciting journey! To kick things off, simply dive into our interactive map. Zoom into countries and major geographic areas and look out for locations marked with a vibrant green border – those are your starting points! If you prefer a quicker route, we've got you covered with a convenient drop-down menu located just below the map.
                 <br><br>
                 Now, the real adventure begins! 🚀 Explore to your heart's content, uncovering hidden gems and local treasures along the way. Whether it's discovering your friendly neighborhood handyman or stumbling upon a secluded beach known only to a select few, the possibilities are endless!
@@ -58,16 +65,16 @@
             <div class="top-index-options">
 
 
-                <div id="contribute-local-knowledge" class="main-container expand-container hidden" style="text-align: center;">
+                <div id="contribute-local-knowledge" class="main-container expand-container hidden">
                     <h2>Contribute with Local Knowledge</h2>
-                    <div style="text-align: center;">
-                        <button id="show-addentity-popup" class="submit-button  wiggle" style="width: fit-content;">
+                    <div>
+                        <button type="button" id="show-addentity-popup" class="submit-button  wiggle">
                             Add Local Knowledge
                         </button>
                     </div>
                 </div>
 
-                <div id="location-selection-wrapper" class="expand-container" style="flex: 1;">
+                <div id="location-selection-wrapper" class="expand-container flex1">
 
                     <h2>Select your Location</h2>
                     <div class="country-selection">
@@ -97,8 +104,8 @@
 
 
         <!-- Recent Knowledge Addtions -->
-        <section class="hidden" style="text-align: center; background-color: #f4f4f4; ">
-            <div class="main-container recently-added" style="padding: 40px 20px">
+        <section class="recent-knowledge-section" class="hidden">
+            <div class="main-container recently-added">
                 <h2>Recently Added in </h2>
                 <div id="recent-entities-container" class="entity-cards-containers">
                     Loading...
@@ -107,7 +114,7 @@
         </section>
 
         <!-- Search Tags -->
-        <section class="main-container hidden" style="text-align: center;">
+        <section class="main-container center-text hidden">
             <!-- Search For Tags -->
             <div>
                 <h2><label for="search-tags">Use "Key Words" to search for what you are looking for</label></h2>
@@ -124,7 +131,7 @@
                 <div class="entity-tag entity-tag-selection"><%= tag.tag_name %></div>
                 <% }) %>
             </div>
-            <button class="submit-button hidden" id="search-entities">Search Local Knowledge</button>
+            <button type="button" class="submit-button hidden" id="search-entities">Search Local Knowledge</button>
             <div id="search-tag-results" class="entity-cards-containers">
 
             </div>
@@ -159,6 +166,10 @@
     var entityLayer = L.layerGroup().addTo(map);
     var addingSpot = false
     var currentLocation = null
+    var withEntityOnly = localStorage.getItem("withEntityOnly")
+
+    if (withEntityOnly != 'true') {withEntityOnly = false }
+    else {withEntityOnly = true; document.getElementById("withEntityOnly").checked = true}
 
 
     // clears all ap layers
@@ -334,11 +345,7 @@
                 console.log(input);
                 createKnowledgePopup(input, true)
             });
-
         }
-
-
-
     }
 
     // adds city markers from an array of cities
@@ -361,35 +368,39 @@
             }
 
             // get entites for each city if in map bound
-            if (isInMapBounds(cityLatLng, 1)) { // show locations that are visible only on the map
+            if (!withEntityOnly || city.entities.length > 0) {
+
+                
+                if (isInMapBounds(cityLatLng, 1)) { // render only locations that are visible on the map
 
 
-                /*getEntities(city.name, 100)
-                    .then(data => {*/
+                    /*getEntities(city.name, 100)
+                        .then(data => {*/
 
-                const ne = city.entities ? `<b>${city.entities.length}</b>` : 0
+                    const ne = city.entities ? `<b>${city.entities.length}</b>` : 0
 
-                // create the html to be isnerted
-                let htmlText = `<b>${city.name}</b><br>${ne} knowledge`
+                    // create the html to be isnerted
+                    let htmlText = `<b>${city.name}</b><br>${ne} knowledge`
 
-                // create the custom marker 
-                const marker = L.marker(cityLatLng, {
-                    icon: customIcon(htmlText, city.name, city.latitude, city.longitude, 16)
-                })
-                markersLayer.addLayer(marker)
-
-                // add cool spots on the map
-                if (addEntityMarkers && city.entities.length > 0) {
-                    city.entities.forEach(entity => {
-                        if (entity.lat && entity.lng) {
-                            addEntityMarker(entity)
-                        }
+                    // create the custom marker 
+                    const marker = L.marker(cityLatLng, {
+                        icon: customIcon(htmlText, city.name, city.latitude, city.longitude, 16)
                     })
+                    markersLayer.addLayer(marker)
 
+                    // add cool spots on the map
+                    if (addEntityMarkers && city.entities.length > 0) {
+                        city.entities.forEach(entity => {
+                            if (entity.lat && entity.lng) {
+                                addEntityMarker(entity)
+                            }
+                        })
+                    }
+
+                    /*})*/
                 }
-
-                /*})*/
             }
+
         })
 
         setTimeout(addHoverEventListener, 2000)
@@ -401,7 +412,7 @@
         //custom icon
         const customIcon = (entity) => {
 
-            const img = entity.images.length > 0 ? `<img src="${entity.images[0].thumbnail_location}">` : `<div class="custom-icon-initials">${(entity.entity_name.charAt(0).toUpperCase() + entity.entity_name.charAt(parseInt(entity.entity_name.length/2)-1).toUpperCase()).trim()}</div>`;
+            const img = entity.images.length > 0 ? `<img src="${entity.images[0].thumbnail_location}" alt="">` : `<div class="custom-icon-initials">${(entity.entity_name.charAt(0).toUpperCase() + entity.entity_name.charAt(parseInt(entity.entity_name.length/2)-1).toUpperCase()).trim()}</div>`;
 
             return L.divIcon({
                 className: 'custom-icon', // Custom class for styling
@@ -464,25 +475,27 @@
                 lng: state.longitude
             }
 
-            // get entites for each state if in map bound
-            if (isInMapBounds(stateLatLng)) { // show locations that are visible only on the map
+            if (!withEntityOnly || state.entities.length > 0) {
+                // get entites for each state if in map bound
+                if (isInMapBounds(stateLatLng)) { // show locations that are visible only on the map
 
-                try {
-                    let ne = state.entities.length > 0 ? `<b>${state.entities.length}</b>` : 0
+                    try {
+                        let ne = state.entities.length > 0 ? `<b>${state.entities.length}</b>` : 0
 
-                    // create the html to be isnerted
-                    let htmlText = `<b>${state.name}</b><br>${ne} knowledge`
+                        // create the html to be isnerted
+                        let htmlText = `<b>${state.name}</b><br>${ne} knowledge`
 
-                    // create the custom marker 
-                    const marker = L.marker(stateLatLng, {
-                        icon: customIcon(htmlText, state.latitude, state.longitude, 11)
-                    })
-                    markersLayer.addLayer(marker)
-                } catch (error) {
-                    console.error(error);
-                    console.log(data);
+                        // create the custom marker 
+                        const marker = L.marker(stateLatLng, {
+                            icon: customIcon(htmlText, state.latitude, state.longitude, 11)
+                        })
+                        markersLayer.addLayer(marker)
+                    } catch (error) {
+                        console.error(error);
+                        console.log(data);
+                    }
+
                 }
-
             }
         })
 
@@ -506,32 +519,35 @@
 
         array.forEach(country => {
 
-            const countryLatLng = {
-                lat: country.latitude,
-                lng: country.longitude
-            }
 
-            // get entites for each country if in map bound
-            if (isInMapBounds(countryLatLng)) { // show locations that are visible only on the map
-
-                try {
-                    let ne = country.entities.length > 0 ? `<b>${country.entities.length}</b>` : 0
-
-                    // create the html to be isnerted
-                    let htmlText = `<b>${country.name}</b><br>${ne} knowledge`
-
-                    // create the custom marker 
-                    const marker = L.marker(countryLatLng, {
-                        icon: customIcon(htmlText, country.latitude, country.longitude, 7)
-                    })
-                    markersLayer.addLayer(marker)
-                } catch (error) {
-                    console.error(error);
-                    console.log(data);
+            if (!withEntityOnly || country.entities.length > 0) {
+                const countryLatLng = {
+                    lat: country.latitude,
+                    lng: country.longitude
                 }
 
+                // get entites for each country if in map bound
+                if (isInMapBounds(countryLatLng)) { // show locations that are visible only on the map
+
+                    try {
+                        let ne = country.entities.length > 0 ? `<b>${country.entities.length}</b>` : 0
+
+                        // create the html to be isnerted
+                        let htmlText = `<b>${country.name}</b><br>${ne} knowledge`
+
+                        // create the custom marker 
+                        const marker = L.marker(countryLatLng, {
+                            icon: customIcon(htmlText, country.latitude, country.longitude, 7)
+                        })
+                        markersLayer.addLayer(marker)
+                    } catch (error) {
+                        console.error(error);
+                        console.log(data);
+                    }
 
 
+
+                }
             }
         })
 
@@ -817,7 +833,7 @@
 
         const button = e.target
 
-        button.innerText = button.innerText == "Add Spot on Map" ? "Cancel Action" : "Add Spot on Map"
+        button.innerText = button.innerText == "Add Spot On Map" ? "Cancel Action" : "Add Spot On Map"
 
         addingSpot = !addingSpot
 
@@ -838,6 +854,21 @@
         const newHeight = Math.min(windowHeight, mapBottom);
         mapElement.style.height = newHeight + "px";
     })
+
+    document.getElementById("withEntityOnly").addEventListener("change", (e) => {
+        withEntityOnly = e.srcElement.checked
+        localStorage.setItem("withEntityOnly", withEntityOnly)
+        populateMapEntities()
+    })
+
+    document.getElementById("map-options-button").addEventListener("click", () => {
+        const opts = document.getElementById("map-options");
+        const buttonSpan = document.getElementById("map-options-button").querySelector("span");
+        opts.classList.toggle("hidden");
+        buttonSpan.innerText = opts.classList.contains("hidden") ? "Options" : "Close Options";
+        // Scroll to the top of the page so tha options are visible
+        window.scrollTo(0, 0);
+    });
 </script>
 
 <!-- Drag Map New Code To Include Touchscreens -->
@@ -884,51 +915,6 @@
         document.addEventListener("touchend", stopDrag);
     }
 </script>
-
-<!-- Show All options if location exists or is selected -->
-<script>
-    window.onload = async () => {
-        let storageLocation = await JSON.parse(localStorage.getItem("location"))
-
-        // Check if storageLocation is null or undefined
-        if (!storageLocation) {
-            localStorage.removeItem("location");
-            storageLocation = false
-        }
-
-        // Check if storageLocation has name, lat, and lng properties
-        if (!storageLocation.name || !storageLocation.lat || !storageLocation.lng) {
-            localStorage.removeItem("location");
-            storageLocation = false
-        }
-
-        const userSetLocation = {}
-        var locationToUse = false
-
-        userSetLocation.name = '<%= user ? user.location_name : "" %>'
-        userSetLocation.lat = '<%= user ? user.lat : "" %>'
-        userSetLocation.lng = '<%= user ? user.lng : "" %>'
-
-
-        // Check if userSetLocation has values
-        const userSetLocationValid = Object.values(userSetLocation).every(value => value !== '' && value !== null);
-
-        // if there is a localStorage set but no User Storage set then send data to server to set location for user
-        if (storageLocation && !userSetLocationValid) locationToUse = storageLocation
-        if (userSetLocationValid) locationToUse = userSetLocation
-        if (locationToUse) {
-
-            showAllSections(locationToUse.name);
-            getEntities(locationToUse.name, 20).then(data => {
-                fillCardsContainer(data, '#recent-entities-container')
-            })
-            goToLocation(locationToUse.lat, locationToUse.lng, 15)
-            currentLocation = locationToUse
-            if (locationToUse === storageLocation && !userSetLocationValid) setLocation(locationToUse)
-        }
-    }
-</script>
-
 
 <!-- Other Scripts -->
 <script>
@@ -997,6 +983,50 @@
     /*setInterval(function() {
         document.getElementById('show-addentity-popup').classList.toggle('wiggle');
     }, 2000);*/
+</script>
+
+<!-- Show All options if location exists or is selected -->
+<script>
+    window.onload = async () => {
+        let storageLocation = await JSON.parse(localStorage.getItem("location"))
+
+        // Check if storageLocation is null or undefined
+        if (!storageLocation) {
+            localStorage.removeItem("location");
+            storageLocation = false
+        }
+
+        // Check if storageLocation has name, lat, and lng properties
+        if (!storageLocation.name || !storageLocation.lat || !storageLocation.lng) {
+            localStorage.removeItem("location");
+            storageLocation = false
+        }
+
+        const userSetLocation = {}
+        var locationToUse = false
+
+        userSetLocation.name = '<%= user ? user.location_name : "" %>'
+        userSetLocation.lat = '<%= user ? user.lat : "" %>'
+        userSetLocation.lng = '<%= user ? user.lng : "" %>'
+
+
+        // Check if userSetLocation has values
+        const userSetLocationValid = Object.values(userSetLocation).every(value => value !== '' && value !== null);
+
+        // if there is a localStorage set but no User Storage set then send data to server to set location for user
+        if (storageLocation && !userSetLocationValid) locationToUse = storageLocation
+        if (userSetLocationValid) locationToUse = userSetLocation
+        if (locationToUse) {
+
+            showAllSections(locationToUse.name);
+            getEntities(locationToUse.name, 20).then(data => {
+                fillCardsContainer(data, '#recent-entities-container')
+            })
+            goToLocation(locationToUse.lat, locationToUse.lng, 15)
+            currentLocation = locationToUse
+            if (locationToUse === storageLocation && !userSetLocationValid) setLocation(locationToUse)
+        }
+    }
 </script>
 
 </html>
