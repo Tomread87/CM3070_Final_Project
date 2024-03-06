@@ -2,7 +2,7 @@
     <div class="badge">
         <% let ne = badges[x].required_entries; let completed = Math.min(parseInt(statistics.totalEntities / ne * 100), 100) %>
         <% let grey = completed < 100 ? "grayscale" : "";  %>
-        <img class="<%= grey %>" src="/static/assets/badges/<%= badges[x].image %>" alt="Entity Icon">
+        <img loading="lazy" class="<%= grey %>" src="/static/assets/badges/<%= badges[x].image %>" alt="Entity Icon">
         <div class="badge-text">
             <div class="stat-title"><%= badges[x].badge_name %></div>
             <div><%= badges[x].description %></div>

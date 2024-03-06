@@ -11,8 +11,6 @@
     <link rel="stylesheet" href="/static/styles/styles.css" />
 
     <!-- Include other scripts -->
-
-
     <style>
         body {
             color: #333;
@@ -74,6 +72,7 @@
             flex-wrap: wrap;
             margin-top: 40px;
             gap: 10px;
+            padding: 0 20px;
         }
 
         .activities-container>div {
@@ -233,7 +232,7 @@
                 <!-- Profile  -->
                 <h2>Profile</h2>
                 <section class="profile-inner-section" style="display: flex; flex-wrap: wrap;">
-                    <% if (searchedUser.thumbnail_location) { %>
+                    <% if (searchedUser && searchedUser.thumbnail_location) { %>
                     <div class="profile-image">
                         <img data-original="<%= searchedUser.original_location %>" onclick="openModal(this)" src="<%= searchedUser.thumbnail_location %>" alt="">
                     </div>
@@ -245,7 +244,7 @@
                         </div>
                     </div>
                     <% } %>
-                    <% if (searchedUser.id == user.id) { %>
+                    <% if (user && searchedUser.id == user.id) { %>
                     <img id="modify-image" src="/static/assets/icons/edit.svg" alt="">
                     <% } %>
 
@@ -319,7 +318,7 @@
 
                     <div id="badges-container" class="badge-container">
                         <div class="badge">
-                            <img class="" src="/static/assets/badges/<%= badges[0].image %>" alt="Entity Icon">
+                            <img loading="lazy"  class="" src="/static/assets/badges/<%= badges[0].image %>" alt="Entity Icon">
                             <div class="badge-text">
                                 <div class="stat-title"><%= badges[0].badge_name %></div>
                                 <div><%= badges[0].description %></div>

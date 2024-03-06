@@ -28,9 +28,6 @@ const credentials = {
 };
 
 
-
-
-
 // HTTP to HTTPS redirect
 const httpApp = express();
 httpApp.use((req, res, next) => {
@@ -45,6 +42,7 @@ httpApp.use((req, res, next) => {
 
 // Starting both http & https servers
 const httpServer = http.createServer(httpApp);
+// const httpServer = http.createServer(app); // for load testing only
 const httpsServer = https.createServer(credentials, app);
 
 // Graceful shutdown

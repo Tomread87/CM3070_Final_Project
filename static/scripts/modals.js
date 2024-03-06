@@ -6,7 +6,7 @@ function create_alert_message(title, message) {
         modal.innerHTML = `
             <div class="inner-message-modal">
                 <div style='display: flex; align-items: center; justify-content: center'>
-                    <img src='/static/assets/icons/alert_red.png' height='30' width='30'>
+                    <img loading="lazy"  src='/static/assets/icons/alert_red.png' height='30' width='30'>
                     <span style='margin-left: 6px; font-size: 1.5em; font-weight: 700'>${title}</span>
                 </div>
                 <br>
@@ -40,7 +40,7 @@ function create_info_message(title, message, action = null) {
         modal.innerHTML = `
             <div class="inner-message-modal">
                 <div style='display: flex; align-items: center; justify-content: center'>
-                    <img src='/static/assets/icons/info-svgrepo-com.svg' height='30' width='30'>
+                    <img loading="lazy"  src='/static/assets/icons/info-svgrepo-com.svg' height='30' width='30'>
                     <span style='margin-left: 6px; font-size: 1.5em; font-weight: 700'>${title}</span>
                 </div>
                 <br>
@@ -74,8 +74,8 @@ function create_success_message(title, message, action = null) {
         modal.classList.add('modal-message-container')
         modal.innerHTML = `<div class="inner-message-modal">
                 <div style='display: flex; align-items: center; justify-content: center;'>
-                    <img src='/static/assets/icons/ok_green.png' height='30' width='30'>
-                    <span style='margin-left: 6px; font-size: 1.5em; font-weight: 700; width: min-content; text-wrap: nowrap;'>${title}</span>
+                    <img loading="lazy"  src='/static/assets/icons/ok_green.png' height='30' width='30'>
+                    <span style='margin-left: 6px; font-size: 1.5em; font-weight: 700; width: auto; text-wrap: nowrap;'>${title}</span>
                 </div>
 
                 <br>
@@ -108,7 +108,7 @@ function create_prompt_message(title, message, action, confirm_name = 'Ok') {
 
                 <!-- Loading animation -->
                 <div class="loading-animation" style="display: none;">
-                    <img src="/static/assets/icons/spinner.gif">
+                    <img loading="lazy"  src="/static/assets/icons/spinner.gif">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
@@ -116,7 +116,7 @@ function create_prompt_message(title, message, action, confirm_name = 'Ok') {
 
                 <div class="prompt-message">
                     <div style='display: flex; align-items: center; justify-content: center;'>
-                        <img src='/static/assets/icons/info-svgrepo-com.svg' style="height: 34px">
+                        <img loading="lazy"  src='/static/assets/icons/info-svgrepo-com.svg' style="height: 34px">
                         <div style='margin-left: 10px; font-size: 1.5em; text-align: center; font-weight: 700'>${title}</div>
                     </div>
 
@@ -166,7 +166,7 @@ function createKnowledgePopup(location, includeCoord = false) {
         <div>
             <label for="entity-latitude">latitude</label>
             <input max="90" min="-90" step="0.00001" id="entity-latitude" type="number" name="entity-latitude" value="${location.lat}">
-            <label for="entity-longitude">latitude</label>
+            <label for="entity-longitude">longitude</label>
             <input max="90" min="-90" step="0.00001" id="entity-longitude" type="number" name="entity-longitude" value="${location.lng}">  
         </div>
         `
@@ -230,7 +230,7 @@ function createKnowledgePopup(location, includeCoord = false) {
                     
                     <div class="file-upload">
                         <label for="entity-image" class="file-upload-label">
-                            <img src="/static/assets/icons/place_item.svg">
+                            <img loading="lazy"  src="/static/assets/icons/place_item.svg">
                             <span class="choose-file"><b>Choose your files</b> or drag them here</span>
                             <input id="entity-image" name="image" type="file" accept="image/*" multiple>
                             <div class="image-input-message" style="font-size: 0.8em;">max 10 files</div>
@@ -340,7 +340,7 @@ function createModifyKnowledgePopup(entity, userId) {
         <div>
             <label for="entity-latitude">latitude</label>
             <input max="90" min="-90" step="0.00001" id="entity-latitude" type="number" name="entity-latitude" value="${convertNullToEmptyString(entity.lat)}">
-            <label for="entity-longitude">latitude</label>
+            <label for="entity-longitude">longitude</label>
             <input max="90" min="-90" step="0.00001" id="entity-longitude" type="number" name="entity-longitude" value="${convertNullToEmptyString(entity.lng)}">  
         </div>
         `
@@ -402,7 +402,7 @@ function createModifyKnowledgePopup(entity, userId) {
                     
                     <div class="file-upload">
                         <label for="entity-image" class="file-upload-label">
-                            <img src="/static/assets/icons/place_item.svg">
+                            <img loading="lazy"  src="/static/assets/icons/place_item.svg">
                             <span class="choose-file"><b>Choose your files</b> or drag them here</span>
                             <input id="entity-image" name="image" type="file" accept="image/*" multiple>
                             <div class="image-input-message" style="font-size: 0.8em;">max 10 files</div>
@@ -534,7 +534,7 @@ function createSingleImageUploadForm() {
             <form id="profile-image-form" enctype="multipart/form-data" action="/changeprofileimage" method="POST">
                 <div class="file-upload">
                     <label for="entity-image" class="file-upload-label">
-                        <img src="/static/assets/icons/place_item.svg">
+                        <img loading="lazy"  src="/static/assets/icons/place_item.svg">
                         <span class="choose-file"><b>Choose a file</b> or drag it here</span>
                         <input id="entity-image" name="image" type="file" accept="image/*" required>
                         <div class="image-input-message" style="font-size: 0.8em;"></div>
@@ -585,7 +585,7 @@ function createAddReviewForm(entity, userId) {
                 </div>
                 <!-- Loading animation -->
                 <div class="loading-animation" style="display: none;">
-                    <img src="/static/assets/icons/spinner.gif">
+                    <img loading="lazy"  src="/static/assets/icons/spinner.gif">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
@@ -594,7 +594,7 @@ function createAddReviewForm(entity, userId) {
                 <h4>Add Images</h4>
                 <div class="file-upload">
                     <label for="entity-image" class="file-upload-label">
-                        <img src="/static/assets/icons/place_item.svg">
+                        <img loading="lazy"  src="/static/assets/icons/place_item.svg">
                         <span class="choose-file"><b>Choose your files</b> or drag them here</span>
                         <input id="entity-image" name="image" type="file" accept="image/*" multiple>
                         <div class="image-input-message" style="font-size: 0.8em;">max 10 files</div>
@@ -724,7 +724,7 @@ function openModal(img) {
     modal.innerHTML = `
         <div class="modal-content">
             <span class="close-modal" onclick="closeModal()">&times;</span>
-            <img id="modalImage" class="modal-image" src="">
+            <img loading="lazy"  id="modalImage" class="modal-image" src="">
         </div>
     `
     document.body.appendChild(modal)

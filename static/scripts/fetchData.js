@@ -219,7 +219,7 @@ function fetchCitiesByIsoCode(isoCode) {
         });
 }
 
-function voteEntity(entityId, voteType, clickedElement) {
+async function voteEntity(entityId, voteType, clickedElement) {
     // Prepare the data to send in the request body
     const requestData = {
         entity_id: entityId,
@@ -238,6 +238,7 @@ function voteEntity(entityId, voteType, clickedElement) {
     // Fetch request
     fetch('/voteentity', options)
         .then(response => {
+            
             if (response.ok) {
                 // Handle successful response
                 console.log('Vote submitted successfully');
@@ -247,15 +248,20 @@ function voteEntity(entityId, voteType, clickedElement) {
                 for (let i = 0; i < siblings.length; i++) {
                     siblings[i].classList.remove('vote-selected');
                 }
-
+                return response.json()
+            } else if (response.status >= 400 && response.status < 500) {
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Failed to submit vote');
+                });
             } else {
-                // Handle error response
+                // Handle other error responses
                 console.error('Failed to submit vote');
+                throw new Error("ops, Something went wrong!");
             }
-            return response.json()
+            
         })
         .then(data => {
-            console.log(data);
+            
             clickedElement.classList.add('vote-selected');
             let span = clickedElement.parentElement.querySelector(".total-votes")
             if (data.vote_data.action == 'insert') {
@@ -267,13 +273,11 @@ function voteEntity(entityId, voteType, clickedElement) {
                 }
             }
             // Add vote-selected class to the clicked element
-
-
-
         })
         .catch(error => {
             // Handle fetch error
             console.error('Error while submitting vote:', error);
+            return create_alert_message("Attention",error)
         });
 }
 
@@ -387,7 +391,6 @@ async function submitEntityForm(type) {
     document.querySelector(".prompt-message").style.display = "none"
 
     const url = type === 'new' ? '/createentity' : '/updateentity'
-    console.log(data);
 
     // Use fetch API to send the data to the server
     fetch(url, {

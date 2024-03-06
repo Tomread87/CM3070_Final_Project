@@ -139,7 +139,7 @@
                         <div class="entityreview">
                             <div class="review-text"><%= review.review_text %></div>
                             <div class="review-by">
-                                written by &nbsp;<b onclick="window.location.href='/profile?userId=<%= review.submitted_by %>'"><%= review.username %></b><img class="review-badge" src="/static/assets/badges/<%= review.badge %>" alt="badge - <%= review.badge %>">
+                                written by &nbsp;<b onclick="window.location.href='/profile?userId=<%= review.submitted_by %>'"><%= review.username %></b><img loading="lazy"  class="review-badge" src="/static/assets/badges/<%= review.badge %>" alt="badge - <%= review.badge %>">
                             </div>
                         </div>
                         <% })} else { %>
@@ -159,17 +159,17 @@
                     </div>
 
                     <div class="created-by-container">
-                        <div>created by &nbsp;<b onclick="window.location.href='/profile?userId=<%= entity.submitted_by %>'"><%= entity.username %></b> <img src="/static/assets/badges/<%= entity.badge %>" alt="badge - <%= entity.badge %>"></div>
+                        <div>created by &nbsp;<b onclick="window.location.href='/profile?userId=<%= entity.submitted_by %>'"><%= entity.username %></b> <img loading="lazy"  src="/static/assets/badges/<%= entity.badge %>" alt="badge - <%= entity.badge %>"></div>
                         <div class="review-button-container">
-                            <img src="/static/assets/icons/thumb_up.svg" title="upvote" onclick="voteEntity('<%= entity.entity_id%>', 1, this)">
+                            <img loading="lazy"  src="/static/assets/icons/thumb_up.svg" title="upvote" onclick="voteEntity('<%= entity.entity_id%>', 1, this)" alt="upvote icon">
                             <span class="total-votes"><%= entity.total_votes %></span>
-                            <img src="/static/assets/icons/thumb_down.svg" title="downvote" onclick="voteEntity('<%= entity.entity_id%>', -1, this)">
+                            <img loading="lazy"  src="/static/assets/icons/thumb_down.svg" title="downvote" onclick="voteEntity('<%= entity.entity_id%>', -1, this)" alt="downvote icon">
                             <% if (user && entity.username === user.username) {  %>
                             <button type="button" class="general-button" onclick="callModifyKnowledgePopup('<%= entity.entity_id %>','<%= entity.submitted_by %>')">Modify</button>
                             <button type="button" class="general-button alert-action-button" onclick="create_prompt_message('Removing Entity','Are you sure you want to permanently remove this entity from the app?', 'closeMessageModal(); deleteEntity(<%= entity.entity_id%>)', 'Yes')">Delete</button>
                             <% } else if (user && user.id) { %>
                             <div class="write-review">
-                                <button type="button" onclick="callAddReviewForm('<%=entity.entity_id%>','<%=user.id%>')" class="general-button"><img src="/static/assets/icons/rate_review.svg" alt="rate review icon">
+                                <button type="button" onclick="callAddReviewForm('<%=entity.entity_id%>','<%=user.id%>')" class="general-button"><img loading="lazy"  src="/static/assets/icons/rate_review.svg" alt="rate review icon">
                                     <div>Add your knowledge</div>
                                 </button>
                             </div>
@@ -290,7 +290,7 @@
         //custom icon
         const customIcon = (entity) => {
 
-            const img = entity.images.length > 0 ? `<img src="${entity.images[0].thumbnail_location}">` : `<div class="custom-icon-initials">${(entity.entity_name.charAt(0).toUpperCase() + entity.entity_name.charAt(parseInt(entity.entity_name.length/2)-1).toUpperCase()).trim()}</div>`;
+            const img = entity.images.length > 0 ? `<img loading="lazy" alt="${entity.images[0].original_name}"  src="${entity.images[0].thumbnail_location}">` : `<div class="custom-icon-initials">${(entity.entity_name.charAt(0).toUpperCase() + entity.entity_name.charAt(parseInt(entity.entity_name.length/2)-1).toUpperCase()).trim()}</div>`;
 
             return L.divIcon({
                 className: 'custom-icon', // Custom class for styling
