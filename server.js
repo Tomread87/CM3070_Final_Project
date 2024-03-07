@@ -42,7 +42,7 @@ httpApp.use((req, res, next) => {
 
 // Starting both http & https servers
 const httpServer = http.createServer(httpApp);
-// const httpServer = http.createServer(app); // for load testing only
+//const httpServer = http.createServer(app); // for load testing only with locust
 const httpsServer = https.createServer(credentials, app);
 
 // Graceful shutdown
